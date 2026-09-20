@@ -54,11 +54,11 @@ export default async function InvoiceDetailPage({
             <CardHeader title="Payments" description={payments.length + " recorded"} />
             <CardBody>
               {payments.length === 0 ? (
-                <p className="text-sm text-gray-500">No payments yet.</p>
+                <p className="text-sm text-ink-500">No payments yet.</p>
               ) : (
                 <ul className="space-y-2 text-sm">
                   {payments.map((p) => (
-                    <li key={p.id} className="flex justify-between border-b border-gray-100 pb-2">
+                    <li key={p.id} className="flex justify-between border-b border-ink-100 pb-2">
                       <span>
                         {formatPHP(p.amount)} · {p.method}
                         {p.receipt_number ? " · " + p.receipt_number : ""}
@@ -93,7 +93,7 @@ export default async function InvoiceDetailPage({
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between">
-      <span className="text-gray-500">{label}</span>
+      <span className="text-ink-500">{label}</span>
       <span className="font-medium capitalize">{value}</span>
     </div>
   );

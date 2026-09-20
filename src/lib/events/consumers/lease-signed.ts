@@ -47,5 +47,4 @@ export async function onLeaseSigned(payload: {
     status: "unpaid",
   });
 
-  console.log("[lease.signed] processed + invoices generated:", lease.id);
 }

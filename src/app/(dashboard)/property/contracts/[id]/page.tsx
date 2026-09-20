@@ -51,9 +51,9 @@ export default async function ContractDetailPage({
         </div>
         <div className="space-y-4">
           {contract.status === "signed" ? (
-            <div className="bg-white border border-gray-200 rounded-lg p-5">
-              <p className="text-sm font-medium text-gray-700 mb-2">Signed</p>
-              <p className="text-xs text-gray-500 mb-3">
+            <div className="bg-surface border border-ink-200 rounded-lg p-5">
+              <p className="text-sm font-medium text-ink-700 mb-2">Signed</p>
+              <p className="text-xs text-ink-500 mb-3">
                 {contract.signed_at
                   ? new Date(contract.signed_at).toLocaleString("en-PH")
                   : ""}
@@ -63,7 +63,7 @@ export default async function ContractDetailPage({
                 <img
                   src={contract.tenant_signature}
                   alt="Tenant signature"
-                  className="border rounded bg-white max-h-24"
+                  className="border rounded bg-surface max-h-24"
                 />
               )}
               {contract.signed_document_url && (

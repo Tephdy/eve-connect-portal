@@ -43,5 +43,4 @@ export async function onInvoicePaid(payload: {
     ref_invoice_id: payload.invoice_id,
   });
 
-  console.log("[invoice.paid] ledger updated for tenant:", lease.tenant_id);
 }

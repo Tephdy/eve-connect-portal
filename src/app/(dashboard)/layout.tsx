@@ -16,16 +16,16 @@ export default async function DashboardLayout({
 
   return (
     <div className="app-shell">
-      <aside className="app-sidebar border-r border-ink-200 bg-surface">
-        <Sidebar roles={roles} />
+      <aside className="app-sidebar border-r border-ink-200/60 bg-surface dark:border-white/[0.06]">
+        <Sidebar roles={roles} email={user.email ?? ""} />
       </aside>
 
-      <header className="app-header border-b border-ink-200 bg-surface">
+      <header className="app-header border-b border-ink-200/60 bg-surface/80 backdrop-blur-md dark:border-white/[0.06] dark:bg-surface/70">
         <Topbar email={user.email ?? ""} roles={roles} />
       </header>
 
       <main className="app-main">
-        <div className="mx-auto max-w-[1400px] p-6">
+        <div className="mx-auto max-w-[1500px] p-6 lg:p-8">
           {children}
         </div>
       </main>

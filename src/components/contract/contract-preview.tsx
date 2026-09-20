@@ -2,9 +2,9 @@
 
 export function ContractPreview({ html }: { html: string }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg">
-      <div className="border-b border-gray-200 px-4 py-2 flex items-center justify-between">
-        <span className="text-sm font-medium text-gray-700">Preview</span>
+    <div className="bg-surface border border-ink-200 rounded-lg">
+      <div className="border-b border-ink-200 px-4 py-2 flex items-center justify-between">
+        <span className="text-sm font-medium text-ink-700">Preview</span>
         <button
           onClick={() => window.print()}
           className="text-xs text-brand-600 hover:underline"

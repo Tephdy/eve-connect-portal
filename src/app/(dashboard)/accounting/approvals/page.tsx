@@ -7,8 +7,9 @@ import { ApprovalTable } from "@/components/accounting/approval-table";
 export default async function ApprovalsPage() {
   await requirePagePermission("invoice:create");
   const jobs = await listPendingApprovals();
+
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title="Cost Approvals"
         description="Job orders above their task-type threshold awaiting your decision."

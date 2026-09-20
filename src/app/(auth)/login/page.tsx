@@ -2,8 +2,57 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import {
+  Building2,
+  Users,
+  Wrench,
+  Receipt,
+  BarChart3,
+  ShieldCheck,
+  ArrowRight,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils/cn";
 
+// ---------------------------------------------------------------------------
+// Feature list — shown on the left panel
+// ---------------------------------------------------------------------------
+const FEATURES = [
+  {
+    icon: Building2,
+    title: "Property & Lease Management",
+    description: "Manage properties, units, tenants, and leases in one place.",
+  },
+  {
+    icon: Receipt,
+    title: "Automated Accounting",
+    description: "Invoices, payments, deposits, and receipts generated automatically.",
+  },
+  {
+    icon: Wrench,
+    title: "Maintenance Workflow",
+    description: "Job orders with per-task approval thresholds and work logs.",
+  },
+  {
+    icon: Users,
+    title: "Marketing & Inquiries",
+    description: "Track listings, availability forecasts, and prospective tenants.",
+  },
+  {
+    icon: BarChart3,
+    title: "Executive Dashboard",
+    description: "Cross-department KPIs, revenue trends, and portfolio health.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Role-Based Access",
+    description: "Six departments, scoped permissions, and full audit trail.",
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Form
+// ---------------------------------------------------------------------------
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
@@ -34,72 +83,171 @@ function LoginForm() {
   }
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="w-full max-w-sm rounded-lg border border-ink-200 bg-surface p-8 shadow-sm"
-    >
-      <h1 className="mb-1 text-xl font-semibold text-brand-600 dark:text-brand-400">
-        Apartment Portal
-      </h1>
-      <p className="mb-6 text-sm text-ink-500">
-        Sign in to access your department workspace.
-      </p>
+    <form onSubmit={onSubmit} className="w-full max-w-sm">
+      {/* Mobile brand header */}
+      <div className="mb-8 flex items-center gap-2.5 lg:hidden">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-gradient shadow-glow-sm">
+          <span className="text-sm font-bold text-white">A</span>
+        </div>
+        <span className="text-base font-semibold tracking-tight text-ink-900">
+          Apartment Portal
+        </span>
+      </div>
+
+      <div className="mb-6">
+        <h2 className="text-2xl font-semibold tracking-tight text-ink-900">
+          Welcome back
+        </h2>
+        <p className="mt-1 text-sm text-ink-500">
+          Sign in to access your department workspace.
+        </p>
+      </div>
 
       {error && (
-        <div className="mb-4 rounded border border-danger-100 bg-danger-50 px-3 py-2 text-sm text-danger-700">
+        <div className="mb-4 rounded-lg border border-danger-500/30 bg-danger-50 px-3.5 py-2.5 text-sm text-danger-700 dark:border-danger-500/30 dark:bg-danger-500/10 dark:text-danger-500">
           {error}
         </div>
       )}
 
-      <label className="mb-1 block text-sm font-medium text-ink-700">Email</label>
-      <input
-        type="email"
-        required
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        className="mb-4 w-full rounded border border-ink-300 bg-surface px-3 py-2 text-sm text-ink-900 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500"
-        autoComplete="email"
-      />
+      <div className="space-y-4">
+        <div>
+          <label
+            htmlFor="email"
+            className="mb-1.5 block text-sm font-medium text-ink-700"
+          >
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            className="h-10 w-full rounded-lg border border-ink-200 bg-surface px-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+            autoComplete="email"
+          />
+        </div>
 
-      <label className="mb-1 block text-sm font-medium text-ink-700">Password</label>
-      <input
-        type="password"
-        required
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        className="mb-6 w-full rounded border border-ink-300 bg-surface px-3 py-2 text-sm text-ink-900 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-500"
-        autoComplete="current-password"
-      />
+        <div>
+          <label
+            htmlFor="password"
+            className="mb-1.5 block text-sm font-medium text-ink-700"
+          >
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            className="h-10 w-full rounded-lg border border-ink-200 bg-surface px-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+            autoComplete="current-password"
+          />
+        </div>
+      </div>
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded bg-brand-500 py-2 text-sm font-medium text-white transition hover:bg-brand-600 disabled:opacity-50"
+        className="mt-6 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-brand-500 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-60"
       >
         {loading ? "Signing in…" : "Sign in"}
+        {!loading && <ArrowRight className="h-4 w-4" />}
       </button>
+
+      <p className="mt-6 text-center text-xs text-ink-400">
+        Access is managed by your system administrator.
+        <br />
+        Contact IT if you need credentials.
+      </p>
     </form>
   );
 }
 
 function LoginFallback() {
   return (
-    <div className="w-full max-w-sm rounded-lg border border-ink-200 bg-surface p-8 shadow-sm">
-      <div className="h-6 w-32 animate-pulse rounded bg-ink-100" />
-      <div className="mt-2 h-4 w-48 animate-pulse rounded bg-ink-100" />
-      <div className="mt-6 h-9 animate-pulse rounded bg-ink-100" />
-      <div className="mt-3 h-9 animate-pulse rounded bg-ink-100" />
-      <div className="mt-6 h-9 animate-pulse rounded bg-ink-100" />
+    <div className="w-full max-w-sm space-y-4">
+      <div className="h-8 w-40 animate-pulse rounded-lg bg-ink-100" />
+      <div className="h-4 w-56 animate-pulse rounded bg-ink-100" />
+      <div className="h-10 animate-pulse rounded-lg bg-ink-100" />
+      <div className="h-10 animate-pulse rounded-lg bg-ink-100" />
+      <div className="h-10 animate-pulse rounded-lg bg-ink-100" />
     </div>
   );
 }
 
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface-muted px-4">
-      <Suspense fallback={<LoginFallback />}>
-        <LoginForm />
-      </Suspense>
+    <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
+      {/* LEFT: brand + features */}
+      <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 p-10 text-white lg:flex">
+        {/* Decorative gradient circles */}
+        <div className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-accent-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-40 -left-24 h-96 w-96 rounded-full bg-brand-400/20 blur-3xl" />
+
+        <div className="relative z-10">
+          {/* Logo + brand */}
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm ring-1 ring-white/20">
+              <span className="text-base font-bold text-white">A</span>
+            </div>
+            <span className="text-lg font-semibold tracking-tight">
+              Apartment Portal
+            </span>
+          </div>
+
+          {/* Title + subtitle */}
+          <div className="mt-16 max-w-lg">
+            <h1 className="text-4xl font-semibold leading-tight tracking-tight">
+              Operations for modern property management.
+            </h1>
+            <p className="mt-4 text-base text-white/80">
+              A unified portal for property, accounting, marketing,
+              maintenance, and executive oversight — built for the way
+              real estate teams actually work.
+            </p>
+          </div>
+
+          {/* Features grid */}
+          <div className="mt-14 grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
+            {FEATURES.map((f) => {
+              const Icon = f.icon;
+              return (
+                <div key={f.title} className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15">
+                    <Icon className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-white">{f.title}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-white/70">
+                      {f.description}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="relative z-10 mt-16 flex items-center justify-between text-xs text-white/60">
+          <span>© {new Date().getFullYear()} Apartment Portal</span>
+          <span>Internal use only</span>
+        </div>
+      </div>
+
+      {/* RIGHT: login form */}
+      <div className="flex items-center justify-center bg-surface-muted px-6 py-12">
+        <Suspense fallback={<LoginFallback />}>
+          <LoginForm />
+        </Suspense>
+      </div>
     </div>
   );
 }

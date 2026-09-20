@@ -1,18 +1,21 @@
 "use client";
 
 import { useEffect } from "react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 export function Modal({
   open,
   onClose,
   title,
+  description,
   children,
   size = "md",
 }: {
   open: boolean;
   onClose: () => void;
   title: React.ReactNode;
+  description?: React.ReactNode;
   children: React.ReactNode;
   size?: "sm" | "md" | "lg" | "xl";
 }) {
@@ -20,8 +23,14 @@ export function Modal({
     function onEsc(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
-    if (open) document.addEventListener("keydown", onEsc);
-    return () => document.removeEventListener("keydown", onEsc);
+    if (open) {
+      document.addEventListener("keydown", onEsc);
+      document.body.style.overflow = "hidden";
+    }
+    return () => {
+      document.removeEventListener("keydown", onEsc);
+      document.body.style.overflow = "";
+    };
   }, [open, onClose]);
 
   if (!open) return null;
@@ -34,21 +43,25 @@ export function Modal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-900/40 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <div
-        className={cn(
-          "w-full bg-white rounded-lg shadow-xl mt-10",
-          widths[size]
-        )}
+        className={cn("mt-16 w-full rounded-lg bg-surface shadow-lg", widths[size])}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-          <h2 className="font-semibold text-gray-900">{title}</h2>
+        <div className="flex items-start justify-between gap-4 border-b border-ink-200 px-5 py-4">
+          <div>
+            <h2 className="font-semibold text-ink-900">{title}</h2>
+            {description && <p className="mt-0.5 text-sm text-ink-500">{description}</p>}
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-700 text-xl leading-none"
+            className="rounded p-1 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
             aria-label="Close"
           >
-            ×
+            <X className="h-4 w-4" />
           </button>
         </div>
         <div className="p-5">{children}</div>

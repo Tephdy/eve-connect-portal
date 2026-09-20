@@ -25,26 +25,25 @@ export type Lease = {
   tenant_name?: string;
 };
 
-// Single-line literal — Supabase's typed client needs this to infer the row shape.
 const LEASE_SELECT =
   "id, unit_id, tenant_id, start_date, end_date, monthly_rent, deposit_amount, notice_period_days, status, created_at, due_date, deposit_1, deposit_2, move_in_date, intent, ad_ons, ad_ons_amount";
 
 function parseAdOns(raw: string | undefined | null): unknown[] {
   if (!raw) return [];
-  return raw
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((text) => ({ text }));
+  return raw.split(",").map((s) => s.trim()).filter(Boolean).map((text) => ({ text }));
 }
 
 function logWriteError(fn: string, error: any) {
-  console.error(`[${fn}]`, JSON.stringify(error, null, 2));
+  console.error("[" + fn + "]", JSON.stringify(error, null, 2));
 }
 
+// -----------------------------------------------------------------------------
+// Enrichment — fetch unit_number and tenant_name in two batch queries
+// -----------------------------------------------------------------------------
 async function enrich(leases: Lease[]): Promise<Lease[]> {
   if (leases.length === 0) return leases;
   const supabase = await createClient();
+
   const unitIds = Array.from(new Set(leases.map((l) => l.unit_id)));
   const tenantIds = Array.from(new Set(leases.map((l) => l.tenant_id)));
 
@@ -53,19 +52,20 @@ async function enrich(leases: Lease[]): Promise<Lease[]> {
     supabase.from("tenant").select("id, full_name").in("id", tenantIds),
   ]);
 
-  const uMap = new Map((units ?? []).map((u: any) => [u.id, u.unit_number]));
-  const tMap = new Map((tenants ?? []).map((t: any) => [t.id, t.full_name]));
+  const uMap = new Map((units ?? []).map((u) => [u.id, u.unit_number]));
+  const tMap = new Map((tenants ?? []).map((t) => [t.id, t.full_name]));
+
   leases.forEach((l) => {
     l.unit_number = uMap.get(l.unit_id);
     l.tenant_name = tMap.get(l.tenant_id);
   });
+
   return leases;
 }
 
 // -----------------------------------------------------------------------------
 // Reads
 // -----------------------------------------------------------------------------
-
 export async function listLeases(): Promise<Lease[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -73,7 +73,7 @@ export async function listLeases(): Promise<Lease[]> {
     .select(LEASE_SELECT)
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
-  return enrich((data ?? []) as unknown as Lease[]);
+  return enrich((data ?? []) as Lease[]);
 }
 
 export async function getLease(id: string): Promise<Lease | null> {
@@ -85,14 +85,13 @@ export async function getLease(id: string): Promise<Lease | null> {
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) return null;
-  const [enriched] = await enrich([data as unknown as Lease]);
+  const [enriched] = await enrich([data as Lease]);
   return enriched;
 }
 
 // -----------------------------------------------------------------------------
-// Writes
+// Writes (admin client — direct, no view)
 // -----------------------------------------------------------------------------
-
 export async function createLease(input: LeaseCreateInput): Promise<Lease> {
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -120,13 +119,12 @@ export async function createLease(input: LeaseCreateInput): Promise<Lease> {
     logWriteError("createLease", error);
     throw new Error(error.message);
   }
-  return data as unknown as Lease;
+  return data as Lease;
 }
 
 export async function updateLease(id: string, input: LeaseUpdateInput): Promise<Lease> {
   const admin = createAdminClient();
   const patch: Record<string, unknown> = {};
-
   if (input.unit_id !== undefined) patch.unit_id = input.unit_id;
   if (input.tenant_id !== undefined) patch.tenant_id = input.tenant_id;
   if (input.start_date !== undefined) patch.start_date = input.start_date;
@@ -155,7 +153,7 @@ export async function updateLease(id: string, input: LeaseUpdateInput): Promise<
     logWriteError("updateLease", error);
     throw new Error(error.message);
   }
-  return data as unknown as Lease;
+  return data as Lease;
 }
 
 export async function terminateLease(id: string): Promise<void> {

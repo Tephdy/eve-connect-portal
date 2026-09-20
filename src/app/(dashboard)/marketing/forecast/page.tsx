@@ -10,7 +10,7 @@ export default async function ForecastPage() {
   const [forecasts, units] = await Promise.all([listForecasts(), listUnits()]);
 
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title="Availability Forecast"
         description="Earliest available date per unit."

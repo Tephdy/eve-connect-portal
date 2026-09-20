@@ -8,5 +8,4 @@ export async function onLeaseTerminated(payload: {
   const admin = createAdminClient();
   // Set unit back to vacant
   await admin.from("unit").update({ status: "vacant" }).eq("id", payload.unit_id);
-  console.log("[lease.terminated] unit vacated:", payload.unit_id);
 }

@@ -32,7 +32,7 @@ export function WorkLogPanel({ jobOrderId, logs }: { jobOrderId: string; logs: W
     <Card>
       <CardHeader title="Work Logs" description={logs.length + " entries"} />
       <CardBody className="space-y-4">
-        <form action={formAction} className="space-y-3 border-b border-gray-100 pb-4">
+        <form action={formAction} className="space-y-3 border-b border-ink-100 pb-4">
           <input type="hidden" name="job_order_id" value={jobOrderId} />
           <Textarea name="notes" label="Notes" rows={2} error={fieldError("notes")} required />
           <div className="grid grid-cols-2 gap-3">
@@ -43,13 +43,13 @@ export function WorkLogPanel({ jobOrderId, logs }: { jobOrderId: string; logs: W
         </form>
 
         {logs.length === 0 ? (
-          <p className="text-sm text-gray-500">No work logs yet.</p>
+          <p className="text-sm text-ink-500">No work logs yet.</p>
         ) : (
           <ul className="space-y-3">
             {logs.map((l) => (
               <li key={l.id} className="text-sm">
-                <p className="text-gray-800">{l.notes}</p>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-ink-800">{l.notes}</p>
+                <p className="text-xs text-ink-500 mt-0.5">
                   {l.hours ? l.hours + "h · " : ""}
                   {l.completed_at ? new Date(l.completed_at).toLocaleString("en-PH") : ""}
                 </p>

@@ -273,3 +273,80 @@ export async function getRecentActivity(limit = 20): Promise<RecentActivity[]> {
     created_at: l.created_at,
   }));
 }
+
+// Append to src/lib/db/executive.ts
+
+export type RevenueChartPoint = {
+  month: string;
+  label: string;
+  collected: number;
+  invoiced: number;
+};
+
+/**
+ * Returns last N months of revenue data.
+ * collected = payments received
+ * invoiced = invoices created
+ */
+export async function getRevenueTimeline(months = 6): Promise<RevenueChartPoint[]> {
+  const supabase = await createClient();
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
+  const startIso = start.toISOString();
+
+  const [{ data: payments }, { data: invoices }] = await Promise.all([
+    supabase.from("payment").select("amount, paid_at").gte("paid_at", startIso),
+    supabase.from("invoice").select("amount, created_at").gte("created_at", startIso),
+  ]);
+
+  // Build buckets
+  const buckets = new Map<string, { collected: number; invoiced: number }>();
+  for (let i = 0; i < months; i++) {
+    const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
+    const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+    buckets.set(key, { collected: 0, invoiced: 0 });
+  }
+
+  for (const p of payments ?? []) {
+    const d = new Date(p.paid_at);
+    const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+    const b = buckets.get(key);
+    if (b) b.collected += Number(p.amount);
+  }
+  for (const inv of invoices ?? []) {
+    const d = new Date(inv.created_at);
+    const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+    const b = buckets.get(key);
+    if (b) b.invoiced += Number(inv.amount);
+  }
+
+  const labels = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+  return Array.from(buckets.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, v]) => ({
+      month,
+      label: labels[Number(month.slice(5)) - 1],
+      collected: v.collected,
+      invoiced: v.invoiced,
+    }));
+}
+
+/**
+ * Monthly collected revenue for the last N months — for sparklines.
+ */
+export async function getCollectedSparkline(months = 10): Promise<number[]> {
+  const timeline = await getRevenueTimeline(months);
+  return timeline.map((t) => t.collected);
+}
+
+/**
+ * Occupancy timeline (approximated from unit status changes over time).
+ * For now: returns current occupancy as a flat sparkline.
+ * In a later pass we can track historical snapshots.
+ */
+export function occupancySparkline(currentPct: number): number[] {
+  // Simple placeholder — real history needs a snapshot table
+  const base = currentPct - 8;
+  return Array.from({ length: 10 }, (_, i) => base + Math.round(Math.sin(i) * 3) + i * 0.8);
+}

@@ -75,7 +75,7 @@ export default async function TenantDetailPage({
             <CardBody className="text-sm space-y-2">
               {!lease ? (
                 <div>
-                  <p className="text-gray-500 mb-3">This tenant has no lease on file.</p>
+                  <p className="text-ink-500 mb-3">This tenant has no lease on file.</p>
                   <Link href="/property/leases/new">
                     <Button size="sm">Create lease</Button>
                   </Link>
@@ -86,7 +86,7 @@ export default async function TenantDetailPage({
                   <Row label="Contract" value={
                     contractInfo
                       ? <Badge tone={contractInfo.status === "signed" ? "green" : "yellow"}>{contractInfo.status}</Badge>
-                      : <span className="text-gray-400">none</span>
+                      : <span className="text-ink-400">none</span>
                   } />
                   <Row label="Due date" value={lease.due_date ?? "—"} />
                   <Row label="Rate" value={formatPHP(lease.monthly_rent)} />
@@ -105,7 +105,7 @@ export default async function TenantDetailPage({
                     }
                   />
                   <Row label="Add-ons amount" value={formatPHP(lease.ad_ons_amount ?? 0)} />
-                  <div className="pt-3 border-t border-gray-100">
+                  <div className="pt-3 border-t border-ink-100">
                     <Link
                       href={"/property/leases/" + lease.id}
                       className="text-brand-600 hover:underline text-sm"
@@ -126,7 +126,7 @@ export default async function TenantDetailPage({
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex justify-between items-start gap-3">
-      <span className="text-gray-500 shrink-0">{label}</span>
+      <span className="text-ink-500 shrink-0">{label}</span>
       <span className="font-medium text-right">{value}</span>
     </div>
   );

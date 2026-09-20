@@ -8,5 +8,4 @@ export async function onJobOrderCompleted(payload: {
   const admin = createAdminClient();
   // Set unit back to vacant so marketing can flip to available
   await admin.from("unit").update({ status: "vacant" }).eq("id", payload.unit_id);
-  console.log("[joborder.completed] unit available:", payload.unit_id);
 }

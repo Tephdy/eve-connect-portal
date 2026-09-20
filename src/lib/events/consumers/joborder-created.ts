@@ -30,12 +30,10 @@ export async function onJobOrderCreated(payload: {
       .from("job_order")
       .update({ status: "pending_approval" })
       .eq("id", payload.joborder_id);
-    console.log(
       "[joborder.created] pending accounting approval:",
       payload.joborder_id,
       "cost", cost, "> threshold", threshold
     );
   } else {
-    console.log("[joborder.created] auto-approved (cost within threshold)");
   }
 }

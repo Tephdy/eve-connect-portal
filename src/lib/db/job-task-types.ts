@@ -31,9 +31,7 @@ export async function listTaskTypes(): Promise<JobTaskType[]> {
     .select("id, key, name, approval_threshold_php")
     .order("name", { ascending: true });
 
-  console.log("[listTaskTypes] error:", error);
-  console.log("[listTaskTypes] row count:", data?.length ?? 0);
-  console.log("[listTaskTypes] first row:", data?.[0]);
+  console.warn("[listTaskTypes] query failed:", error?.message ?? error);
 
   if (error) {
     console.warn("[listTaskTypes] falling back:", error.message);

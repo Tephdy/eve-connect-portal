@@ -90,10 +90,10 @@ export function SignaturePad({
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-3">
+    <div className="bg-surface border border-ink-200 rounded-lg p-5 space-y-3">
       <div>
-        <p className="text-sm font-medium text-gray-700">Tenant signature</p>
-        <p className="text-xs text-gray-500">
+        <p className="text-sm font-medium text-ink-700">Tenant signature</p>
+        <p className="text-xs text-ink-500">
           Have {tenantName || "the tenant"} sign in the box below.
         </p>
       </div>
@@ -108,7 +108,7 @@ export function SignaturePad({
         onTouchStart={startDraw}
         onTouchMove={draw}
         onTouchEnd={endDraw}
-        className="border border-gray-300 rounded bg-white w-full touch-none"
+        className="border border-ink-300 rounded bg-surface w-full touch-none"
       />
       <div className="flex items-center gap-2">
         <Button onClick={submit} loading={pending}>Sign & Finalize</Button>

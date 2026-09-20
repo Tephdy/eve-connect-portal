@@ -58,19 +58,19 @@ export default async function JobOrderDetailPage({
           <WorkLogPanel jobOrderId={job.id} logs={logs} />
         </div>
         <div className="space-y-4">
-          <div className="bg-white border border-gray-200 rounded-lg p-5 text-sm space-y-2">
+          <div className="bg-surface border border-ink-200 rounded-lg p-5 text-sm space-y-2">
             <div className="flex justify-between">
-              <span className="text-gray-500">Task type</span>
+              <span className="text-ink-500">Task type</span>
               <span className="font-medium">{job.task_type_name ?? "—"}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Cost estimate</span>
+              <span className="text-ink-500">Cost estimate</span>
               <span className="font-medium">
                 {job.cost_estimate != null ? formatPHP(job.cost_estimate) : "—"}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Priority</span>
+              <span className="text-ink-500">Priority</span>
               <span className="font-medium capitalize">{job.priority}</span>
             </div>
           </div>
@@ -78,9 +78,9 @@ export default async function JobOrderDetailPage({
           <JobOrderActions job={job} />
 
           {canCancel && (
-            <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-2">
-              <p className="text-sm font-medium text-gray-700">Danger zone</p>
-              <p className="text-xs text-gray-500">
+            <div className="bg-surface border border-ink-200 rounded-lg p-5 space-y-2">
+              <p className="text-sm font-medium text-ink-700">Danger zone</p>
+              <p className="text-xs text-ink-500">
                 Cancel keeps the record for auditing. Delete removes it permanently.
               </p>
               <div className="flex flex-col gap-2 pt-1">

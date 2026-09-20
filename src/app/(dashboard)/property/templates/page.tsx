@@ -9,18 +9,28 @@ import { TemplateTable } from "@/components/contract/template-table";
 export default async function TemplatesPage() {
   await requirePagePermission("template:manage");
   const templates = await listTemplates();
+
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title="Contract Templates"
         description="Reusable HTML templates for lease contracts."
-        action={<Link href="/property/templates/new"><Button>+ New Template</Button></Link>}
+        action={
+          <Link href="/property/templates/new">
+            <Button>+ New Template</Button>
+          </Link>
+        }
       />
+
       {templates.length === 0 ? (
         <EmptyState
           title="No templates yet"
           description="Create a template to generate contracts."
-          action={<Link href="/property/templates/new"><Button>+ New Template</Button></Link>}
+          action={
+            <Link href="/property/templates/new">
+              <Button>+ New Template</Button>
+            </Link>
+          }
         />
       ) : (
         <TemplateTable templates={templates} />

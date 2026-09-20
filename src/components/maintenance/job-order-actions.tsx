@@ -33,8 +33,8 @@ export function JobOrderActions({ job }: { job: JobOrder }) {
   if (!canStart && !canComplete) return null;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-2">
-      <p className="text-sm font-medium text-gray-700">Actions</p>
+    <div className="bg-surface border border-ink-200 rounded-lg p-5 space-y-2">
+      <p className="text-sm font-medium text-ink-700">Actions</p>
       {canStart && <Button onClick={onStart} loading={pending}>Start work</Button>}
       {canComplete && <Button variant="primary" onClick={onComplete} loading={pending}>Mark completed</Button>}
     </div>

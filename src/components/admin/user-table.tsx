@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { User as UserIcon, Plus, ShieldCheck, X } from "lucide-react";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardBody } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Modal } from "@/components/ui/modal";
+import { StatusPill } from "@/components/dashboard/status-pill";
 import { useToast } from "@/components/ui/toast";
 import {
   assignRoleAction,
@@ -15,6 +17,19 @@ import {
   createUserAction,
 } from "@/app/(dashboard)/admin/actions";
 import type { AdminUser } from "@/lib/db/admin";
+
+const ROLE_LABEL: Record<string, string> = {
+  accounting: "Accounting",
+  marketing: "Marketing",
+  maintenance: "Maintenance",
+  property_rep: "Property Rep",
+  executive: "Executive",
+  system_admin: "System Admin",
+};
+
+function initials(email: string) {
+  return email.split("@")[0].split(/[._-]/).map((s) => s[0]).join("").slice(0, 2).toUpperCase();
+}
 
 export function UserTable({
   users,
@@ -29,29 +44,33 @@ export function UserTable({
   const [creating, setCreating] = useState(false);
 
   return (
-    <div>
-      <div className="flex justify-end mb-3">
-        <Button onClick={() => setCreating(true)}>+ New User</Button>
+    <>
+      <div className="flex justify-end">
+        <Button onClick={() => setCreating(true)}>
+          <Plus className="mr-1.5 h-3.5 w-3.5" />
+          New User
+        </Button>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <Table>
-          <THead>
-            <TR>
-              <TH>Email</TH>
-              <TH>Name</TH>
-              <TH>Roles</TH>
-              <TH>Status</TH>
-              <TH className="text-right">Actions</TH>
-            </TR>
-          </THead>
-          <TBody>
-            {users.map((u) => (
-              <UserRow key={u.id} user={u} onManage={() => setManageUser(u)} />
-            ))}
-          </TBody>
-        </Table>
-      </div>
+      <Card className="overflow-hidden">
+        <CardBody className="p-0">
+          <Table>
+            <THead>
+              <TR>
+                <TH>User</TH>
+                <TH>Roles</TH>
+                <TH>Status</TH>
+                <TH className="text-right"></TH>
+              </TR>
+            </THead>
+            <TBody>
+              {users.map((u) => (
+                <UserRow key={u.id} user={u} onManage={() => setManageUser(u)} />
+              ))}
+            </TBody>
+          </Table>
+        </CardBody>
+      </Card>
 
       <Modal
         open={!!manageUser}
@@ -81,7 +100,7 @@ export function UserTable({
           onDone={() => setCreating(false)}
         />
       </Modal>
-    </div>
+    </>
   );
 }
 
@@ -103,25 +122,43 @@ function UserRow({ user, onManage }: { user: AdminUser; onManage: () => void }) 
 
   return (
     <TR>
-      <TD className="font-medium">{user.email}</TD>
-      <TD className="text-gray-600">{user.full_name || "—"}</TD>
+      <TD>
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-accent-500 text-xs font-semibold text-white">
+            {initials(user.email) || <UserIcon className="h-4 w-4" />}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate font-medium text-ink-900">
+              {user.full_name || user.email.split("@")[0]}
+            </p>
+            <p className="truncate text-xs text-ink-500">{user.email}</p>
+          </div>
+        </div>
+      </TD>
       <TD>
         <div className="flex flex-wrap gap-1">
           {user.roles.length === 0 ? (
-            <span className="text-xs text-gray-400">no roles</span>
+            <span className="text-xs text-ink-400">no roles</span>
           ) : (
             user.roles.map((r) => (
-              <Badge key={r.role_key} tone="blue">{r.role_key}</Badge>
+              <StatusPill key={r.role_key} tone="brand">
+                {ROLE_LABEL[r.role_key] ?? r.role_key}
+              </StatusPill>
             ))
           )}
         </div>
       </TD>
       <TD>
-        <Badge tone={user.status === "active" ? "green" : "red"}>{user.status}</Badge>
+        <StatusPill tone={user.status === "active" ? "green" : "red"} dot>
+          {user.status}
+        </StatusPill>
       </TD>
       <TD className="text-right">
         <div className="flex justify-end gap-2">
-          <Button size="sm" variant="secondary" onClick={onManage}>Manage roles</Button>
+          <Button size="sm" variant="secondary" onClick={onManage}>
+            <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />
+            Manage roles
+          </Button>
           <Button size="sm" variant="ghost" onClick={toggleStatus} loading={pending}>
             {user.status === "active" ? "Suspend" : "Reactivate"}
           </Button>
@@ -181,22 +218,25 @@ function ManageRolesForm({
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-sm font-medium mb-2">Current roles</p>
+        <p className="mb-2 text-sm font-medium text-ink-800">Current roles</p>
         {user.roles.length === 0 ? (
-          <p className="text-sm text-gray-500">No roles assigned.</p>
+          <p className="text-sm text-ink-500">No roles assigned.</p>
         ) : (
-          <ul className="space-y-1">
+          <ul className="space-y-1.5">
             {user.roles.map((r) => (
-              <li key={r.role_key} className="flex items-center justify-between text-sm">
-                <span>
-                  <Badge tone="blue">{r.role_key}</Badge>{" "}
-                  <span className="text-gray-500 text-xs">
+              <li
+                key={r.role_key}
+                className="flex items-center justify-between rounded-lg border border-ink-200 bg-surface-muted px-3 py-2 dark:border-white/[0.06] dark:bg-white/[0.02]"
+              >
+                <div className="flex items-center gap-2">
+                  <StatusPill tone="brand">{ROLE_LABEL[r.role_key] ?? r.role_key}</StatusPill>
+                  <span className="text-xs text-ink-500">
                     {r.scope_type}
                     {r.scope_property_id
                       ? " · " + (properties.find((p) => p.id === r.scope_property_id)?.name ?? "")
                       : ""}
                   </span>
-                </span>
+                </div>
                 <Button size="sm" variant="ghost" onClick={() => revoke(r.role_key)} loading={pending}>
                   Revoke
                 </Button>
@@ -206,11 +246,11 @@ function ManageRolesForm({
         )}
       </div>
 
-      <div className="border-t border-gray-200 pt-4 space-y-3">
-        <p className="text-sm font-medium">Grant a new role</p>
+      <div className="space-y-3 border-t border-ink-200 pt-4 dark:border-white/[0.06]">
+        <p className="text-sm font-medium text-ink-800">Grant a new role</p>
         <Select
           label="Role"
-          options={roles.map((r) => ({ value: r.id, label: r.name }))}
+          options={roles.map((r) => ({ value: r.id, label: ROLE_LABEL[r.key] ?? r.name }))}
           value={roleId}
           onChange={(e) => setRoleId(e.target.value)}
         />
@@ -232,17 +272,17 @@ function ManageRolesForm({
           />
         )}
         <div className="flex justify-end gap-2 pt-2">
-          <Button variant="secondary" onClick={onDone}>Close</Button>
-          <Button onClick={grant} loading={pending}>Grant role</Button>
+          <Button variant="secondary" onClick={onDone}>
+            Close
+          </Button>
+          <Button onClick={grant} loading={pending}>
+            Grant role
+          </Button>
         </div>
       </div>
     </div>
   );
 }
-
-// -----------------------------------------------------------------------------
-// Create user form
-// -----------------------------------------------------------------------------
 
 function CreateUserForm({
   roles,
@@ -305,12 +345,12 @@ function CreateUserForm({
         type="text"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-        hint="Minimum 6 characters. Share this with the user; they can change it later."
+        hint="Minimum 6 characters. Share with the user; they can change it later."
         required
       />
       <Select
         label="Initial role"
-        options={roles.map((r) => ({ value: r.id, label: r.name }))}
+        options={roles.map((r) => ({ value: r.id, label: ROLE_LABEL[r.key] ?? r.name }))}
         value={roleId}
         onChange={(e) => setRoleId(e.target.value)}
       />
@@ -332,8 +372,12 @@ function CreateUserForm({
         />
       )}
       <div className="flex justify-end gap-2 pt-2">
-        <Button variant="secondary" onClick={onDone}>Cancel</Button>
-        <Button onClick={submit} loading={pending}>Create user</Button>
+        <Button variant="secondary" onClick={onDone}>
+          Cancel
+        </Button>
+        <Button onClick={submit} loading={pending}>
+          Create user
+        </Button>
       </div>
     </div>
   );

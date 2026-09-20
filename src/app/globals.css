@@ -2,18 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
-/* =============================================================================
-   CSS VARIABLES — light + dark
-   ============================================================================= */
-
 :root {
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
 
-  /* Light theme */
-  --surface:        255 255 255;    /* white cards */
-  --surface-muted:  248 250 252;    /* page background */
-  --surface-sunken: 241 245 249;    /* sunken areas */
+  --surface:        255 255 255;
+  --surface-muted:  247 249 252;
+  --surface-sunken: 240 244 249;
+  --surface-raised: 252 253 255;
 
   --ink-50:  248 250 252;
   --ink-100: 241 245 249;
@@ -30,38 +26,32 @@
 }
 
 .dark {
-  /* Dark theme */
-  --surface:        24  24  27;     /* zinc-900-ish cards */
-  --surface-muted:  9   9   11;     /* zinc-950 page */
-  --surface-sunken: 39  39  42;     /* zinc-800 */
+  --surface:        13  20  36;
+  --surface-muted:  9   14  26;
+  --surface-sunken: 6   10  20;
+  --surface-raised: 18  27  46;
 
-  /* Invert the ink scale for dark mode readability */
-  --ink-50:  9   9   11;
-  --ink-100: 24  24  27;
-  --ink-200: 39  39  42;
-  --ink-300: 63  63  70;
-  --ink-400: 113 113 122;
-  --ink-500: 161 161 170;
-  --ink-600: 212 212 216;
-  --ink-700: 228 228 231;
-  --ink-800: 244 244 245;
-  --ink-900: 250 250 250;
+  --ink-50:  9   14  26;
+  --ink-100: 18  27  46;
+  --ink-200: 30  41  66;
+  --ink-300: 51  65  91;
+  --ink-400: 116 132 159;
+  --ink-500: 156 170 193;
+  --ink-600: 190 201 219;
+  --ink-700: 214 222 235;
+  --ink-800: 235 240 248;
+  --ink-900: 248 250 252;
 
   color-scheme: dark;
 }
-
-/* =============================================================================
-   BASE
-   ============================================================================= */
 
 * {
   border-color: rgb(var(--ink-200));
 }
 
-html,
-body {
+html, body {
   height: 100%;
-  overflow: hidden; /* App-managed scrolling */
+  overflow: hidden;
 }
 
 body {
@@ -74,9 +64,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* =============================================================================
-   SCROLLBARS
-   ============================================================================= */
+.dark body {
+  background-image:
+    radial-gradient(1200px 600px at 10% -10%, rgba(59, 111, 255, 0.06), transparent),
+    radial-gradient(900px 500px at 100% 0%, rgba(34, 211, 238, 0.05), transparent);
+  background-attachment: fixed;
+}
 
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -91,15 +84,7 @@ body {
   background-clip: content-box;
 }
 
-/* Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgb(var(--ink-300)) transparent;
-}
-
-/* =============================================================================
-   FOCUS / SELECTION
-   ============================================================================= */
+* { scrollbar-width: thin; scrollbar-color: rgb(var(--ink-300)) transparent; }
 
 :focus-visible {
   outline: 2px solid theme("colors.brand.500");
@@ -107,19 +92,18 @@ body {
 }
 
 ::selection {
-  background: theme("colors.brand.100");
+  background: theme("colors.brand.200");
   color: theme("colors.brand.900");
 }
+.dark ::selection {
+  background: theme("colors.brand.700");
+  color: theme("colors.brand.50");
+}
 
-/* =============================================================================
-   UTILITIES
-   ============================================================================= */
-
-/* App viewport: fixed 100vw x 100vh, only inner content scrolls */
 .app-shell {
   display: grid;
-  grid-template-columns: 15rem 1fr;
-  grid-template-rows: 3.5rem 1fr;
+  grid-template-columns: 16rem 1fr;
+  grid-template-rows: 4rem 1fr;
   grid-template-areas:
     "sidebar header"
     "sidebar main";
@@ -132,7 +116,7 @@ body {
 .app-header  { grid-area: header;  overflow: hidden; }
 .app-main    { grid-area: main;    overflow-y: auto; overflow-x: hidden; }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .app-shell {
     grid-template-columns: 1fr;
     grid-template-areas:
@@ -141,10 +125,6 @@ body {
   }
   .app-sidebar { display: none; }
 }
-
-/* =============================================================================
-   PRINT
-   ============================================================================= */
 
 @media print {
   html, body { overflow: visible !important; height: auto !important; }
