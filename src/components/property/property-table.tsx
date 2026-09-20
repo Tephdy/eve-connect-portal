@@ -6,15 +6,15 @@ import { StatusPill } from "@/components/dashboard/status-pill";
 import type { Property } from "@/lib/db/properties";
 
 const TYPE_TONE: Record<string, "brand" | "purple" | "gray"> = {
-  residential: "brand",
-  commercial:  "purple",
-  mixed:       "gray",
+  studio_unit:     "brand",
+  one_two_bedroom: "purple",
+  bedspace:        "gray",
 };
 
 const TYPE_LABEL: Record<string, string> = {
-  residential: "Residential",
-  commercial:  "Commercial",
-  mixed:       "Mixed",
+  studio_unit:     "Studio Unit",
+  one_two_bedroom: "1 & 2 Bedroom",
+  bedspace:        "Bedspace",
 };
 
 export function PropertyTable({ properties }: { properties: Property[] }) {

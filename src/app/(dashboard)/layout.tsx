@@ -21,7 +21,7 @@ export default async function DashboardLayout({
       </aside>
 
       <header className="app-header border-b border-ink-200/60 bg-surface/80 backdrop-blur-md dark:border-white/[0.06] dark:bg-surface/70">
-        <Topbar email={user.email ?? ""} roles={roles} />
+        <Topbar roles={roles} />
       </header>
 
       <main className="app-main">

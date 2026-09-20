@@ -11,8 +11,8 @@ import {
 } from "recharts";
 
 export type RevenueDatum = {
-  month: string; // "2026-01"
-  label: string; // "Jan"
+  month: string;
+  label: string;
   collected: number;
   invoiced: number;
 };
@@ -80,10 +80,11 @@ export function RevenueChart({
               boxShadow: "0 6px 16px rgba(15,23,42,0.10)",
             }}
             labelStyle={{ color: "rgb(var(--ink-900))", fontWeight: 600 }}
-            formatter={(value: number, name: string) => [
-              "₱" + value.toLocaleString("en-PH"),
-              name === "collected" ? "Collected" : "Invoiced",
-            ]}
+            formatter={(value, name) => {
+              const num = typeof value === "number" ? value : Number(value ?? 0);
+              const label = name === "collected" ? "Collected" : "Invoiced";
+              return ["₱" + num.toLocaleString("en-PH"), label];
+            }}
           />
           <Area
             type="monotone"

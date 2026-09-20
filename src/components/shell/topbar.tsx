@@ -5,14 +5,9 @@ import { Bell, Moon, Sun, Monitor, Plus } from "lucide-react";
 import { useTheme } from "next-themes";
 import { SearchBar } from "./search-bar";
 import { RolePill } from "./role-badge";
+import type { UserRole } from "@/lib/auth/get-user-roles";
 
-export function Topbar({
-  email,
-  roles,
-}: {
-  email: string;
-  roles: { role_key: string; scope_type: string; scope_property_id: string | null }[];
-}) {
+export function Topbar({ roles }: { roles: UserRole[] }) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
