@@ -16,9 +16,9 @@ import type { ActionResult } from "@/lib/actions/result";
 import type { Property } from "@/lib/db/properties";
 
 const TYPE_OPTIONS = [
-  { value: "Studio Unit", label: "Studio Unit" },
-  { value: "1&2 BR",  label: "1&2 BR" },
-  { value: "Bedspace",       label: "Bedspace" },
+  { value: "studio_unit",     label: "Studio Unit" },
+  { value: "one_two_bedroom", label: "1 & 2 Bedroom" },
+  { value: "bedspace",        label: "Bedspace" },
 ];
 
 function SubmitButton({ label }: { label: string }) {
@@ -84,7 +84,7 @@ export function PropertyForm({
             name="type"
             label="Type"
             options={TYPE_OPTIONS}
-            defaultValue={property?.type ?? "residential"}
+            defaultValue={property?.type ?? "studio_unit"}
             error={fieldError("type")}
           />
           <Input

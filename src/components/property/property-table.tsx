@@ -4,10 +4,21 @@ import { Badge } from "@/components/ui/badge";
 import type { Property } from "@/lib/db/properties";
 
 const TYPE_TONE: Record<string, "blue" | "purple" | "gray"> = {
-  residential: "blue",
-  commercial:  "purple",
-  mixed:       "gray",
+  studio_unit:     "blue",
+  one_two_bedroom: "purple",
+  bedspace:        "gray",
 };
+
+const TYPE_LABEL: Record<string, string> = {
+  studio_unit:     "Studio Unit",
+  one_two_bedroom: "1 & 2 Bedroom",
+  bedspace:        "Bedspace",
+};
+
+// in the row:
+<Badge tone={TYPE_TONE[p.type] ?? "gray"}>
+  {TYPE_LABEL[p.type] ?? p.type}
+</Badge>
 
 export function PropertyTable({ properties }: { properties: Property[] }) {
   return (
