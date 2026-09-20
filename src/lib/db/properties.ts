@@ -6,7 +6,7 @@ export type Property = {
   id: string;
   name: string;
   address: string | null;
-  type: "residential" | "commercial" | "mixed";
+  type: "studio_unit" | "one_two_bedroom" | "bedspace";
   total_units: number;
   created_at: string;
   archived_at: string | null;

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const propertyTypes = ["residential", "commercial", "mixed"] as const;
+export const propertyTypes = ["studio unit", "1&2 bedroom", "bedspace"] as const;
 
 export const propertyCreateSchema = z.object({
   name: z.string().min(1, "Name is required").max(200),

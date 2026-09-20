@@ -16,9 +16,9 @@ import type { ActionResult } from "@/lib/actions/result";
 import type { Property } from "@/lib/db/properties";
 
 const TYPE_OPTIONS = [
-  { value: "residential", label: "Residential" },
-  { value: "commercial",  label: "Commercial" },
-  { value: "mixed",       label: "Mixed" },
+  { value: "Studio Unit", label: "Studio Unit" },
+  { value: "1&2 BR",  label: "1&2 BR" },
+  { value: "Bedspace",       label: "Bedspace" },
 ];
 
 function SubmitButton({ label }: { label: string }) {
