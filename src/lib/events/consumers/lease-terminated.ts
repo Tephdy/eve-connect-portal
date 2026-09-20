@@ -1,0 +1,12 @@
+import "server-only";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+export async function onLeaseTerminated(payload: {
+  lease_id: string;
+  unit_id: string;
+}) {
+  const admin = createAdminClient();
+  // Set unit back to vacant
+  await admin.from("unit").update({ status: "vacant" }).eq("id", payload.unit_id);
+  console.log("[lease.terminated] unit vacated:", payload.unit_id);
+}

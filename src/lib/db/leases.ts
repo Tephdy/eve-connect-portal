@@ -1,0 +1,171 @@
+import "server-only";
+import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import type { LeaseCreateInput, LeaseUpdateInput } from "@/lib/schemas/lease";
+
+export type Lease = {
+  id: string;
+  unit_id: string;
+  tenant_id: string;
+  start_date: string;
+  end_date: string;
+  move_in_date: string | null;
+  due_date: string | null;
+  intent: "new" | "renew" | "extend" | null;
+  monthly_rent: number;
+  deposit_amount: number;
+  deposit_1: number | null;
+  deposit_2: number | null;
+  ad_ons: unknown;
+  ad_ons_amount: number | null;
+  notice_period_days: number;
+  status: "draft" | "active" | "expiring" | "ended" | "terminated";
+  created_at: string;
+  unit_number?: string;
+  tenant_name?: string;
+};
+
+// Single-line literal — Supabase's typed client needs this to infer the row shape.
+const LEASE_SELECT =
+  "id, unit_id, tenant_id, start_date, end_date, monthly_rent, deposit_amount, notice_period_days, status, created_at, due_date, deposit_1, deposit_2, move_in_date, intent, ad_ons, ad_ons_amount";
+
+function parseAdOns(raw: string | undefined | null): unknown[] {
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((text) => ({ text }));
+}
+
+function logWriteError(fn: string, error: any) {
+  console.error(`[${fn}]`, JSON.stringify(error, null, 2));
+}
+
+async function enrich(leases: Lease[]): Promise<Lease[]> {
+  if (leases.length === 0) return leases;
+  const supabase = await createClient();
+  const unitIds = Array.from(new Set(leases.map((l) => l.unit_id)));
+  const tenantIds = Array.from(new Set(leases.map((l) => l.tenant_id)));
+
+  const [{ data: units }, { data: tenants }] = await Promise.all([
+    supabase.from("unit").select("id, unit_number").in("id", unitIds),
+    supabase.from("tenant").select("id, full_name").in("id", tenantIds),
+  ]);
+
+  const uMap = new Map((units ?? []).map((u: any) => [u.id, u.unit_number]));
+  const tMap = new Map((tenants ?? []).map((t: any) => [t.id, t.full_name]));
+  leases.forEach((l) => {
+    l.unit_number = uMap.get(l.unit_id);
+    l.tenant_name = tMap.get(l.tenant_id);
+  });
+  return leases;
+}
+
+// -----------------------------------------------------------------------------
+// Reads
+// -----------------------------------------------------------------------------
+
+export async function listLeases(): Promise<Lease[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("lease")
+    .select(LEASE_SELECT)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return enrich((data ?? []) as unknown as Lease[]);
+}
+
+export async function getLease(id: string): Promise<Lease | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("lease")
+    .select(LEASE_SELECT)
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  const [enriched] = await enrich([data as unknown as Lease]);
+  return enriched;
+}
+
+// -----------------------------------------------------------------------------
+// Writes
+// -----------------------------------------------------------------------------
+
+export async function createLease(input: LeaseCreateInput): Promise<Lease> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("lease")
+    .insert({
+      unit_id: input.unit_id,
+      tenant_id: input.tenant_id,
+      start_date: input.start_date,
+      end_date: input.end_date,
+      move_in_date: input.move_in_date || null,
+      due_date: input.due_date || null,
+      intent: input.intent ?? "new",
+      monthly_rent: input.monthly_rent,
+      deposit_amount: input.deposit_amount ?? 0,
+      deposit_1: input.deposit_1 ?? 0,
+      deposit_2: input.deposit_2 ?? 0,
+      notice_period_days: input.notice_period_days,
+      ad_ons: parseAdOns(typeof input.ad_ons === "string" ? input.ad_ons : ""),
+      ad_ons_amount: input.ad_ons_amount ?? 0,
+      status: input.status,
+    })
+    .select(LEASE_SELECT)
+    .single();
+  if (error) {
+    logWriteError("createLease", error);
+    throw new Error(error.message);
+  }
+  return data as unknown as Lease;
+}
+
+export async function updateLease(id: string, input: LeaseUpdateInput): Promise<Lease> {
+  const admin = createAdminClient();
+  const patch: Record<string, unknown> = {};
+
+  if (input.unit_id !== undefined) patch.unit_id = input.unit_id;
+  if (input.tenant_id !== undefined) patch.tenant_id = input.tenant_id;
+  if (input.start_date !== undefined) patch.start_date = input.start_date;
+  if (input.end_date !== undefined) patch.end_date = input.end_date;
+  if (input.move_in_date !== undefined) patch.move_in_date = input.move_in_date || null;
+  if (input.due_date !== undefined) patch.due_date = input.due_date || null;
+  if (input.intent !== undefined) patch.intent = input.intent;
+  if (input.monthly_rent !== undefined) patch.monthly_rent = input.monthly_rent;
+  if (input.deposit_amount !== undefined) patch.deposit_amount = input.deposit_amount;
+  if (input.deposit_1 !== undefined) patch.deposit_1 = input.deposit_1;
+  if (input.deposit_2 !== undefined) patch.deposit_2 = input.deposit_2;
+  if (input.notice_period_days !== undefined) patch.notice_period_days = input.notice_period_days;
+  if (input.ad_ons !== undefined) {
+    patch.ad_ons = parseAdOns(typeof input.ad_ons === "string" ? input.ad_ons : "");
+  }
+  if (input.ad_ons_amount !== undefined) patch.ad_ons_amount = input.ad_ons_amount;
+  if (input.status !== undefined) patch.status = input.status;
+
+  const { data, error } = await admin
+    .from("lease")
+    .update(patch)
+    .eq("id", id)
+    .select(LEASE_SELECT)
+    .single();
+  if (error) {
+    logWriteError("updateLease", error);
+    throw new Error(error.message);
+  }
+  return data as unknown as Lease;
+}
+
+export async function terminateLease(id: string): Promise<void> {
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("lease")
+    .update({ status: "terminated" })
+    .eq("id", id);
+  if (error) {
+    logWriteError("terminateLease", error);
+    throw new Error(error.message);
+  }
+}
