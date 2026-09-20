@@ -15,14 +15,9 @@ const TYPE_LABEL: Record<string, string> = {
   bedspace:        "Bedspace",
 };
 
-// in the row:
-<Badge tone={TYPE_TONE[p.type] ?? "gray"}>
-  {TYPE_LABEL[p.type] ?? p.type}
-</Badge>
-
 export function PropertyTable({ properties }: { properties: Property[] }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+    <div className="overflow-hidden rounded-lg border border-ink-200 bg-surface">
       <Table>
         <THead>
           <TR>
@@ -45,14 +40,16 @@ export function PropertyTable({ properties }: { properties: Property[] }) {
                 </Link>
               </TD>
               <TD>
-                <Badge tone={TYPE_TONE[p.type] ?? "gray"}>{p.type}</Badge>
+                <Badge tone={TYPE_TONE[p.type] ?? "gray"}>
+                  {TYPE_LABEL[p.type] ?? p.type}
+                </Badge>
               </TD>
-              <TD className="text-gray-600">{p.address ?? "—"}</TD>
+              <TD className="text-ink-600">{p.address ?? "—"}</TD>
               <TD className="text-right">{p.total_units}</TD>
               <TD className="text-right">
                 <Link
                   href={"/property/properties/" + p.id}
-                  className="text-brand-600 hover:underline text-sm"
+                  className="text-sm text-brand-600 hover:underline"
                 >
                   Edit
                 </Link>
