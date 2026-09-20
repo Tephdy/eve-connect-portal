@@ -8,9 +8,6 @@ export type JobTaskType = {
   approval_threshold_php: number;
 };
 
-// Standard task types with PHP thresholds. Used as a fallback when
-// the DB table is empty or not yet seeded, so the UI is never broken.
-// Once maint.job_task_type is populated, DB rows take precedence.
 const FALLBACK_TASK_TYPES: JobTaskType[] = [
   { id: "plumbing",     key: "plumbing",     name: "Plumbing",         approval_threshold_php: 5000  },
   { id: "electrical",   key: "electrical",   name: "Electrical",       approval_threshold_php: 5000  },
@@ -31,21 +28,20 @@ export async function listTaskTypes(): Promise<JobTaskType[]> {
     .select("id, key, name, approval_threshold_php")
     .order("name", { ascending: true });
 
-  console.warn("[listTaskTypes] query failed:", error?.message ?? error);
-
   if (error) {
-    console.warn("[listTaskTypes] falling back:", error.message);
+    console.warn("[listTaskTypes] query failed:", error.message);
     return FALLBACK_TASK_TYPES;
   }
 
   const rows = (data ?? []) as JobTaskType[];
   if (rows.length === 0) {
-    console.warn("[listTaskTypes] empty — using fallback");
+    console.warn("[listTaskTypes] empty, using fallback");
     return FALLBACK_TASK_TYPES;
   }
 
   return rows;
 }
+
 export async function updateTaskType(
   id: string,
   threshold: number

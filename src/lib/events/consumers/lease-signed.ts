@@ -13,13 +13,12 @@ export async function onLeaseSigned(payload: {
     .select("id, unit_id, tenant_id, start_date, end_date, monthly_rent, deposit_amount")
     .eq("id", payload.lease_id)
     .single();
-  if (!lease) { console.error("[lease.signed] lease not found"); return; }
 
-  // Mark lease active + unit occupied
+  if (!lease) return;
+
   await admin.from("lease").update({ status: "active" }).eq("id", lease.id);
   await admin.from("unit").update({ status: "occupied" }).eq("id", lease.unit_id);
 
-  // Create deposit invoice if deposit_amount > 0
   if (Number(lease.deposit_amount) > 0) {
     await admin.from("invoice").insert({
       lease_id: lease.id,
@@ -29,7 +28,6 @@ export async function onLeaseSigned(payload: {
       status: "unpaid",
     });
 
-    // Record deposit as held
     await admin.from("deposit").insert({
       lease_id: lease.id,
       amount: lease.deposit_amount,
@@ -38,7 +36,6 @@ export async function onLeaseSigned(payload: {
     });
   }
 
-  // Create first month's rent invoice
   await admin.from("invoice").insert({
     lease_id: lease.id,
     type: "rent",
@@ -46,5 +43,4 @@ export async function onLeaseSigned(payload: {
     due_date: lease.start_date,
     status: "unpaid",
   });
-
 }

@@ -8,7 +8,6 @@ export async function onInvoicePaid(payload: {
 }) {
   const admin = createAdminClient();
 
-  // Get invoice -> lease -> tenant
   const { data: invoice } = await admin
     .from("invoice")
     .select("id, lease_id")
@@ -23,7 +22,6 @@ export async function onInvoicePaid(payload: {
     .single();
   if (!lease) return;
 
-  // Append ledger credit
   const { data: last } = await admin
     .from("ledger_entry")
     .select("balance_after")
@@ -42,5 +40,4 @@ export async function onInvoicePaid(payload: {
     balance_after,
     ref_invoice_id: payload.invoice_id,
   });
-
 }
