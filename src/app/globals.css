@@ -110,11 +110,28 @@ body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  isolation: isolate;
 }
 
-.app-sidebar { grid-area: sidebar; overflow: hidden; }
-.app-header  { grid-area: header;  overflow: hidden; }
-.app-main    { grid-area: main;    overflow-y: auto; overflow-x: hidden; }
+.app-sidebar {
+  grid-area: sidebar;
+  overflow: hidden;
+}
+
+.app-header {
+  grid-area: header;
+  overflow: visible;
+  position: relative;
+  z-index: 30;
+}
+
+.app-main {
+  grid-area: main;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  z-index: 10;
+}
 
 @media (max-width: 900px) {
   .app-shell {

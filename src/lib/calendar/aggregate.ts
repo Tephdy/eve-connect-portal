@@ -42,10 +42,6 @@ export async function getCalendarMonth(
   const types = filters.types.length === 0 ? null : new Set(filters.types);
   const shouldInclude = (t: CalendarEvent["type"]) => !types || types.has(t);
 
-  console.log("[calendar] window:", startStr, "->", endStr);
-  console.log("[calendar] property filter:", filters.property_id ?? "(none)");
-  console.log("[calendar] types filter:", filters.types.length > 0 ? filters.types.join(",") : "(all)");
-
   // ---- Leases ----
   const { data: leaseRows, error: leaseErr } = await supabase
     .from("lease")
@@ -53,27 +49,7 @@ export async function getCalendarMonth(
       "id, unit_id, tenant_id, start_date, end_date, due_date, monthly_rent, status, unit_number, tenant_name"
     );
 
-  if (leaseErr) {
-  console.error("[calendar] lease query FAILED");
-  console.error("[calendar] message:", leaseErr.message);
-  console.error("[calendar] code:", leaseErr.code);
-  console.error("[calendar] details:", leaseErr.details);
-  console.error("[calendar] hint:", leaseErr.hint);
-}
-
   const leases = (leaseRows ?? []) as any[];
-
-  console.log("[calendar] total leases loaded:", leases.length);
-  console.log(
-    "[calendar] lease end_dates:",
-    leases.map((l) => ({
-      id: String(l.id).slice(0, 8),
-      end: l.end_date,
-      start: l.start_date,
-      status: l.status,
-      has_end: l.end_date != null,
-    }))
-  );
 
   const unitIds = Array.from(new Set(leases.map((l) => l.unit_id))).filter(Boolean);
   const unitLookup = new Map<
@@ -107,8 +83,6 @@ export async function getCalendarMonth(
     const info = unitLookup.get(l.unit_id);
     return info?.property_id === filters.property_id;
   });
-
-  console.log("[calendar] filteredLeases count:", filteredLeases.length);
 
   // ---- Invoices ----
   const { data: invoiceRows } = await supabase
@@ -250,20 +224,10 @@ export async function getCalendarMonth(
   }
 
   // ---- lease_ending ----
-  console.log("[calendar] shouldInclude(lease_ending):", shouldInclude("lease_ending"));
   if (shouldInclude("lease_ending")) {
     for (const l of filteredLeases) {
       const inRange = l.end_date >= startStr && l.end_date <= endStr;
       const validStatus = l.status === "active" || l.status === "expiring";
-
-      console.log("[calendar] lease_ending check:", {
-        id: String(l.id).slice(0, 8),
-        end_date: l.end_date,
-        in_window: inRange,
-        status: l.status,
-        valid_status: validStatus,
-        will_push: inRange && validStatus,
-      });
 
       if (!inRange) continue;
       if (!validStatus) continue;
@@ -318,17 +282,6 @@ export async function getCalendarMonth(
   for (const date of Object.keys(eventsByDate)) {
     eventsByDate[date].sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
   }
-
-  console.log("[calendar] final event count:", Object.values(eventsByDate).flat().length);
-  console.log(
-    "[calendar] final by type:",
-    Object.values(eventsByDate)
-      .flat()
-      .reduce((acc: Record<string, number>, e) => {
-        acc[e.type] = (acc[e.type] ?? 0) + 1;
-        return acc;
-      }, {})
-  );
 
   return { year, month, eventsByDate };
 }

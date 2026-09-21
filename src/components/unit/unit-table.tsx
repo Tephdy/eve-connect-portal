@@ -14,7 +14,13 @@ const STATUS_TONE: Record<string, "green" | "brand" | "yellow" | "red" | "gray">
   unavailable: "gray",
 };
 
-export function UnitTable({ units }: { units: Unit[] }) {
+export function UnitTable({
+  units,
+  showFooterCount,
+}: {
+  units: Unit[];
+  showFooterCount?: boolean;
+}) {
   return (
     <Card className="overflow-hidden">
       <CardBody className="p-0">
@@ -71,6 +77,11 @@ export function UnitTable({ units }: { units: Unit[] }) {
           </TBody>
         </Table>
       </CardBody>
+      {showFooterCount && (
+        <div className="border-t border-ink-200 px-5 py-3 text-xs text-ink-500 dark:border-white/[0.06]">
+          {units.length} row{units.length === 1 ? "" : "s"}
+        </div>
+      )}
     </Card>
   );
 }
