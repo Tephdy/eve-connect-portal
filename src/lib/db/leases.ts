@@ -26,8 +26,14 @@ export type Lease = {
   tenant_name?: string;
 };
 
+// Must be a SINGLE literal string so Supabase can infer row shape.
 const LEASE_SELECT =
   "id, unit_id, tenant_id, start_date, end_date, monthly_rent, deposit_amount, notice_period_days, status, created_at, due_date, deposit_1, deposit_2, move_in_date, intent, ad_ons, ad_ons_amount, term, unit_number, tenant_name";
+
+// Writes go to core.lease (base table) — this select is only used for
+// the returned row after insert/update, so it can exclude joined columns.
+const LEASE_WRITE_SELECT =
+  "id, unit_id, tenant_id, start_date, end_date, monthly_rent, deposit_amount, notice_period_days, status, created_at, due_date, deposit_1, deposit_2, move_in_date, intent, ad_ons, ad_ons_amount, term";
 
 function parseAdOns(raw: string | undefined | null): unknown[] {
   if (!raw) return [];
@@ -38,30 +44,10 @@ function logWriteError(fn: string, error: any) {
   console.error("[" + fn + "]", JSON.stringify(error, null, 2));
 }
 
-export async function listLeases(): Promise<Lease[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("lease")
-    .select(LEASE_SELECT)
-    .order("created_at", { ascending: false });
-  if (error) throw new Error(error.message);
-  return (data ?? []) as Lease[];
-}
-
-export async function getLease(id: string): Promise<Lease | null> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("lease")
-    .select(LEASE_SELECT)
-    .eq("id", id)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  return (data as Lease) ?? null;
-}
-
 export async function createLease(input: LeaseCreateInput): Promise<Lease> {
   const admin = createAdminClient();
   const { data, error } = await admin
+    .schema("core")
     .from("lease")
     .insert({
       unit_id: input.unit_id,
@@ -81,13 +67,14 @@ export async function createLease(input: LeaseCreateInput): Promise<Lease> {
       ad_ons_amount: input.ad_ons_amount ?? 0,
       status: input.status,
     })
-    .select(LEASE_SELECT)
+    .select(LEASE_WRITE_SELECT)
     .single();
+
   if (error) {
     logWriteError("createLease", error);
     throw new Error(error.message);
   }
-  return data as Lease;
+  return data as unknown as Lease;
 }
 
 export async function updateLease(id: string, input: LeaseUpdateInput): Promise<Lease> {
@@ -114,20 +101,49 @@ export async function updateLease(id: string, input: LeaseUpdateInput): Promise<
   if (input.status !== undefined) patch.status = input.status;
 
   const { data, error } = await admin
-    .from("lease").update(patch).eq("id", id).select(LEASE_SELECT).single();
+    .schema("core")
+    .from("lease")
+    .update(patch)
+    .eq("id", id)
+    .select(LEASE_WRITE_SELECT)
+    .single();
+
   if (error) {
     logWriteError("updateLease", error);
     throw new Error(error.message);
   }
-  return data as Lease;
+  return data as unknown as Lease;
 }
 
 export async function terminateLease(id: string): Promise<void> {
   const admin = createAdminClient();
   const { error } = await admin
-    .from("lease").update({ status: "terminated" }).eq("id", id);
+    .schema("core")
+    .from("lease")
+    .update({ status: "terminated" })
+    .eq("id", id);
   if (error) {
     logWriteError("terminateLease", error);
     throw new Error(error.message);
   }
+}
+export async function listLeases(): Promise<Lease[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("lease")
+    .select(LEASE_SELECT)
+    .order("created_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as unknown as Lease[];
+}
+
+export async function getLease(id: string): Promise<Lease | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("lease")
+    .select(LEASE_SELECT)
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as unknown as Lease) ?? null;
 }
