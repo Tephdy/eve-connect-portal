@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { X, ExternalLink, Calendar, Building2 } from "lucide-react";
+import { X, ExternalLink, Calendar, Building2, Receipt, FileText, Send } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { Button } from "@/components/ui/button";
 import { formatPHP } from "@/lib/utils/format-php";
@@ -26,6 +26,34 @@ export function EventPreview({
 }) {
   if (!event) return null;
   const colors = TYPE_COLORS[event.type];
+
+  // Type-specific quick actions
+  const actions: { label: string; href: string; icon: React.ReactNode }[] = [];
+
+  if (event.type === "invoice_due" && event.source_id) {
+    actions.push({
+      label: "Record payment",
+      href: "/accounting/invoices/" + event.source_id,
+      icon: <Receipt className="h-3.5 w-3.5" />,
+    });
+  }
+  if (
+    (event.type === "lease_starting" || event.type === "lease_ending") &&
+    event.source_id
+  ) {
+    actions.push({
+      label: "Open lease",
+      href: "/property/leases/" + event.source_id,
+      icon: <FileText className="h-3.5 w-3.5" />,
+    });
+  }
+  if (event.type === "rent_due" && event.source_id) {
+    actions.push({
+      label: "Send reminder",
+      href: "/property/leases/" + event.source_id,
+      icon: <Send className="h-3.5 w-3.5" />,
+    });
+  }
 
   return (
     <div
@@ -100,6 +128,23 @@ export function EventPreview({
             />
           )}
         </div>
+
+        {/* Quick actions */}
+        {actions.length > 0 && (
+          <div className="border-t border-ink-200 px-5 py-3 dark:border-white/[0.06]">
+            <p className="mb-2 text-xs font-medium text-ink-500">Quick actions</p>
+            <div className="flex flex-wrap gap-2">
+              {actions.map((a) => (
+                <Link key={a.label} href={a.href}>
+                  <Button variant="secondary" size="sm">
+                    {a.icon}
+                    <span className="ml-1.5">{a.label}</span>
+                  </Button>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-end gap-2 border-t border-ink-200 px-5 py-3 dark:border-white/[0.06]">
           <Button variant="secondary" onClick={onClose}>

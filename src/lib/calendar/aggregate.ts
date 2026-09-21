@@ -42,13 +42,38 @@ export async function getCalendarMonth(
   const types = filters.types.length === 0 ? null : new Set(filters.types);
   const shouldInclude = (t: CalendarEvent["type"]) => !types || types.has(t);
 
-  const { data: leaseRows } = await supabase
+  console.log("[calendar] window:", startStr, "->", endStr);
+  console.log("[calendar] property filter:", filters.property_id ?? "(none)");
+  console.log("[calendar] types filter:", filters.types.length > 0 ? filters.types.join(",") : "(all)");
+
+  // ---- Leases ----
+  const { data: leaseRows, error: leaseErr } = await supabase
     .from("lease")
     .select(
       "id, unit_id, tenant_id, start_date, end_date, due_date, monthly_rent, status, unit_number, tenant_name"
     );
 
+  if (leaseErr) {
+  console.error("[calendar] lease query FAILED");
+  console.error("[calendar] message:", leaseErr.message);
+  console.error("[calendar] code:", leaseErr.code);
+  console.error("[calendar] details:", leaseErr.details);
+  console.error("[calendar] hint:", leaseErr.hint);
+}
+
   const leases = (leaseRows ?? []) as any[];
+
+  console.log("[calendar] total leases loaded:", leases.length);
+  console.log(
+    "[calendar] lease end_dates:",
+    leases.map((l) => ({
+      id: String(l.id).slice(0, 8),
+      end: l.end_date,
+      start: l.start_date,
+      status: l.status,
+      has_end: l.end_date != null,
+    }))
+  );
 
   const unitIds = Array.from(new Set(leases.map((l) => l.unit_id))).filter(Boolean);
   const unitLookup = new Map<
@@ -83,6 +108,9 @@ export async function getCalendarMonth(
     return info?.property_id === filters.property_id;
   });
 
+  console.log("[calendar] filteredLeases count:", filteredLeases.length);
+
+  // ---- Invoices ----
   const { data: invoiceRows } = await supabase
     .from("invoice")
     .select("id, lease_id, type, amount, due_date, status, display_number")
@@ -106,6 +134,7 @@ export async function getCalendarMonth(
     for (const l of extra ?? []) leaseMap.set(l.id, l);
   }
 
+  // ---- Payments ----
   const startTs = startStr + "T00:00:00.000Z";
   const endTs = endStr + "T23:59:59.999Z";
 
@@ -159,6 +188,7 @@ export async function getCalendarMonth(
         subtitle: info?.unit_number ? "Unit " + info.unit_number : undefined,
         amount: Number(l.monthly_rent ?? 0),
         href: "/property/leases/" + l.id,
+        source_id: l.id,
         property_id: info?.property_id,
         property_name: info?.property_name,
       });
@@ -193,6 +223,7 @@ export async function getCalendarMonth(
         amount: Number(inv.amount ?? 0),
         status: inv.status,
         href: "/accounting/invoices/" + inv.id,
+        source_id: inv.id,
         property_id: info?.property_id,
         property_name: info?.property_name,
       });
@@ -211,16 +242,31 @@ export async function getCalendarMonth(
         subtitle: info?.unit_number ? "Unit " + info.unit_number : undefined,
         amount: Number(l.monthly_rent ?? 0),
         href: "/property/leases/" + l.id,
+        source_id: l.id,
         property_id: info?.property_id,
         property_name: info?.property_name,
       });
     }
   }
 
+  // ---- lease_ending ----
+  console.log("[calendar] shouldInclude(lease_ending):", shouldInclude("lease_ending"));
   if (shouldInclude("lease_ending")) {
     for (const l of filteredLeases) {
-      if (l.end_date < startStr || l.end_date > endStr) continue;
-      if (l.status !== "active" && l.status !== "expiring") continue;
+      const inRange = l.end_date >= startStr && l.end_date <= endStr;
+      const validStatus = l.status === "active" || l.status === "expiring";
+
+      console.log("[calendar] lease_ending check:", {
+        id: String(l.id).slice(0, 8),
+        end_date: l.end_date,
+        in_window: inRange,
+        status: l.status,
+        valid_status: validStatus,
+        will_push: inRange && validStatus,
+      });
+
+      if (!inRange) continue;
+      if (!validStatus) continue;
       const info = unitLookup.get(l.unit_id);
       push(l.end_date, {
         id: "end_" + l.id,
@@ -229,6 +275,7 @@ export async function getCalendarMonth(
         title: "Lease ends — " + (l.tenant_name ?? "Tenant"),
         subtitle: info?.unit_number ? "Unit " + info.unit_number : undefined,
         href: "/property/leases/" + l.id,
+        source_id: l.id,
         property_id: info?.property_id,
         property_name: info?.property_name,
       });
@@ -254,6 +301,7 @@ export async function getCalendarMonth(
         subtitle: inv?.display_number ? "Invoice " + inv.display_number : undefined,
         amount: Number(p.amount ?? 0),
         href: "/accounting/payments/" + p.id + "/receipt",
+        source_id: p.id,
         property_id: info?.property_id,
         property_name: info?.property_name,
       });
@@ -270,6 +318,17 @@ export async function getCalendarMonth(
   for (const date of Object.keys(eventsByDate)) {
     eventsByDate[date].sort((a, b) => order.indexOf(a.type) - order.indexOf(b.type));
   }
+
+  console.log("[calendar] final event count:", Object.values(eventsByDate).flat().length);
+  console.log(
+    "[calendar] final by type:",
+    Object.values(eventsByDate)
+      .flat()
+      .reduce((acc: Record<string, number>, e) => {
+        acc[e.type] = (acc[e.type] ?? 0) + 1;
+        return acc;
+      }, {})
+  );
 
   return { year, month, eventsByDate };
 }
@@ -301,10 +360,6 @@ export function summarizeMonth(month: CalendarMonth) {
   return { counts, overdue, totalDue, totalPaid };
 }
 
-/**
- * Leases expiring within the next N days.
- * Used for the alert banner.
- */
 export async function getExpiringSoon(days = 30, property_id?: string | null) {
   const supabase = await createClient();
   const today = new Date();
@@ -315,9 +370,7 @@ export async function getExpiringSoon(days = 30, property_id?: string | null) {
 
   const { data: leases } = await supabase
     .from("lease")
-    .select(
-      "id, unit_id, end_date, monthly_rent, tenant_name, status"
-    )
+    .select("id, unit_id, end_date, monthly_rent, tenant_name, status")
     .eq("status", "active")
     .gte("end_date", todayStr)
     .lte("end_date", cutoffStr)

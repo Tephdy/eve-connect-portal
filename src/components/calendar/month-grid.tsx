@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { cn } from "@/lib/utils/cn";
-import { EventChip } from "./event-chip";
+import { DraggableChip } from "./draggable-chip";
 import type { CalendarEvent, CalendarMonth } from "@/lib/calendar/types";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -19,11 +20,15 @@ export function MonthGrid({
   selectedDate,
   onSelectDate,
   onPreview,
+  onDropEvent,
+  dragDisabled,
 }: {
   month: CalendarMonth;
   selectedDate: string | null;
   onSelectDate: (date: string) => void;
   onPreview: (e: CalendarEvent) => void;
+  onDropEvent: (event: CalendarEvent, newDate: string) => void;
+  dragDisabled?: boolean;
 }) {
   const { year, month: m, eventsByDate } = month;
   const firstOfMonth = new Date(year, m - 1, 1);
@@ -33,6 +38,9 @@ export function MonthGrid({
 
   const now = new Date();
   const todayYmd = ymd(now.getFullYear(), now.getMonth() + 1, now.getDate());
+
+  const [dragging, setDragging] = useState<CalendarEvent | null>(null);
+  const [hoverDate, setHoverDate] = useState<string | null>(null);
 
   const cells: { date: string; day: number; current: boolean }[] = [];
 
@@ -50,6 +58,26 @@ export function MonthGrid({
     const nextMonth = m === 12 ? 1 : m + 1;
     const nextYear = m === 12 ? year + 1 : year;
     cells.push({ date: ymd(nextYear, nextMonth, d), day: d, current: false });
+  }
+
+  function handleDragOver(e: React.DragEvent, date: string) {
+    if (!dragging) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setHoverDate(date);
+  }
+
+  function handleDragLeave() {
+    setHoverDate(null);
+  }
+
+  function handleDrop(e: React.DragEvent, date: string) {
+    e.preventDefault();
+    if (dragging && dragging.date !== date) {
+      onDropEvent(dragging, date);
+    }
+    setDragging(null);
+    setHoverDate(null);
   }
 
   return (
@@ -70,6 +98,10 @@ export function MonthGrid({
           const events = eventsByDate[cell.date] ?? [];
           const isToday = cell.date === todayYmd;
           const isSelected = cell.date === selectedDate;
+          const isDropTarget = hoverDate === cell.date && dragging;
+          const isValidTarget =
+            dragging &&
+            (dragging.type === "lease_ending" || dragging.type === "lease_starting");
 
           return (
             <div
@@ -83,11 +115,17 @@ export function MonthGrid({
                   onSelectDate(cell.date);
                 }
               }}
+              onDragOver={(e) => !dragDisabled && handleDragOver(e, cell.date)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => !dragDisabled && handleDrop(e, cell.date)}
               className={cn(
                 "group relative flex min-h-[110px] cursor-pointer flex-col gap-1 border-b border-r border-ink-200 p-1.5 text-left transition-colors dark:border-white/[0.06]",
                 "hover:bg-ink-50 dark:hover:bg-white/[0.02]",
                 !cell.current && "bg-ink-50/40 dark:bg-white/[0.01]",
-                isSelected && "bg-brand-500/5"
+                isSelected && "bg-brand-500/5",
+                isDropTarget &&
+                  isValidTarget &&
+                  "bg-brand-500/10 ring-2 ring-brand-500/40 ring-inset"
               )}
             >
               <div className="flex items-center justify-between">
@@ -109,7 +147,16 @@ export function MonthGrid({
               </div>
               <div className="flex flex-col gap-0.5">
                 {events.slice(0, 3).map((e: CalendarEvent) => (
-                  <EventChip key={e.id} event={e} variant="compact" onPreview={onPreview} />
+                  <DraggableChip
+                    key={e.id}
+                    event={e}
+                    onPreview={onPreview}
+                    onDragStart={setDragging}
+                    onDragEnd={() => {
+                      setDragging(null);
+                      setHoverDate(null);
+                    }}
+                  />
                 ))}
               </div>
             </div>

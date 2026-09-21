@@ -5,23 +5,27 @@ export type CalendarEventType =
   | "lease_ending"
   | "payment";
 
+export type ViewMode = "month" | "week" | "list";
+
 export type CalendarEvent = {
   id: string;
-  date: string; // YYYY-MM-DD
+  date: string;
   type: CalendarEventType;
   title: string;
-  subtitle?: string;   // tenant + unit
+  subtitle?: string;
   amount?: number;
-  status?: string;     // for invoices: unpaid, overdue, paid
+  status?: string;
   href?: string;
   property_id?: string;
   property_name?: string;
+  /** Source record id — the lease id for lease events, invoice id for invoices, etc. */
+  source_id?: string;
   meta?: Record<string, string | number | undefined>;
 };
 
 export type CalendarMonth = {
   year: number;
-  month: number; // 1-12
+  month: number;
   eventsByDate: Record<string, CalendarEvent[]>;
 };
 
