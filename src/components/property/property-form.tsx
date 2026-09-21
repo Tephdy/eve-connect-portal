@@ -53,7 +53,6 @@ export function PropertyForm({
   useEffect(() => {
     if (state?.ok) {
       toast.push(mode === "create" ? "Property created" : "Property updated", "success");
-      if (mode === "edit") router.refresh();
     } else if (state && !state.ok) {
       toast.push(state.error, "error");
     }

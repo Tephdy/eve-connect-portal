@@ -39,7 +39,6 @@ export function TenantForm({
   useEffect(() => {
     if (state?.ok) {
       toast.push(mode === "create" ? "Tenant created" : "Tenant updated", "success");
-      if (mode === "edit") router.refresh();
     } else if (state && !state.ok) {
       toast.push(state.error, "error");
     }

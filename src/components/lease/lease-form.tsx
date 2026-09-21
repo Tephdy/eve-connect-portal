@@ -54,7 +54,6 @@ export function LeaseForm({
   useEffect(() => {
     if (state?.ok) {
       toast.push(mode === "create" ? "Lease created" : "Lease updated", "success");
-      if (mode === "edit") router.refresh();
     } else if (state && !state.ok) toast.push(state.error, "error");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);

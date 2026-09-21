@@ -43,7 +43,6 @@ export function UnitForm({
   useEffect(() => {
     if (state?.ok) {
       toast.push(mode === "create" ? "Unit created" : "Unit updated", "success");
-      if (mode === "edit") router.refresh();
     } else if (state && !state.ok) {
       toast.push(state.error, "error");
     }

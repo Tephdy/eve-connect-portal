@@ -55,7 +55,6 @@ export function JobOrderForm({
   useEffect(() => {
     if (state?.ok) {
       toast.push(mode === "create" ? "Job order created" : "Job order updated", "success");
-      if (mode === "edit") router.refresh();
     } else if (state && !state.ok) {
       toast.push(state.error, "error");
     }

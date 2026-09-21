@@ -2,7 +2,6 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -32,15 +31,12 @@ export function PaymentForm({
 }: {
   invoiceId: string;
   remaining: number;
-}) {
-  const router = useRouter();
-  const toast = useToast();
+}) {  const toast = useToast();
   const [state, formAction] = useActionState<ActionResult | null, FormData>(recordPaymentAction, null);
 
   useEffect(() => {
     if (state?.ok) {
       toast.push("Payment recorded", "success");
-      router.refresh();
     } else if (state && !state.ok) {
       toast.push(state.error, "error");
     }
