@@ -21,6 +21,7 @@ import {
   Wallet,
   CheckSquare,
   BarChart3,
+  Calendar as CalendarIcon,
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
@@ -54,6 +55,7 @@ const GROUPS: NavGroup[] = [
       { href: "/property/units",      label: "Units",      icon: DoorOpen, roles: ["property_rep", "executive", "marketing", "maintenance"] },
       { href: "/property/tenants",    label: "Tenants",    icon: Users, roles: ["property_rep", "executive"] },
       { href: "/property/leases",     label: "Leases",     icon: FileText, roles: ["property_rep", "executive"] },
+      { href: "/property/calendar",    label: "Calendar",    icon: CalendarIcon, roles: ["property_rep", "executive"] },
       { href: "/property/contracts",  label: "Contracts",  icon: FileSignature, roles: ["property_rep", "executive"] },
       { href: "/property/templates",  label: "Templates",  icon: ScrollText, roles: ["property_rep", "executive"] },
     ],
@@ -76,6 +78,7 @@ const GROUPS: NavGroup[] = [
       { href: "/accounting/invoices",  label: "Invoices",  icon: Receipt, roles: ["accounting", "executive"] },
       { href: "/accounting/payments",  label: "Payments",  icon: CreditCard, roles: ["accounting", "executive"] },
       { href: "/accounting/deposits",  label: "Deposits",  icon: Wallet, roles: ["accounting", "executive"] },
+      { href: "/accounting/calendar",  label: "Calendar",  icon: CalendarIcon, roles: ["accounting", "executive"] },
       { href: "/accounting/approvals", label: "Approvals", icon: CheckSquare, roles: ["accounting", "executive"] },
     ],
   },

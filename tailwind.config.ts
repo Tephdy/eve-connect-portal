@@ -89,10 +89,15 @@ const config: Config = {
       },
       transitionDuration: { DEFAULT: "150ms" },
       keyframes: {
+        "pulse-slow": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.5" },
+        },
         "fade-in": { from: { opacity: "0" }, to: { opacity: "1" } },
         "slide-in-top": { from: { transform: "translateY(-8px)", opacity: "0" }, to: { transform: "translateY(0)", opacity: "1" } },
       },
       animation: {
+        "pulse-slow": "pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "fade-in": "fade-in 200ms ease-out",
         "slide-in-top": "slide-in-top 200ms ease-out",
       },

@@ -22,9 +22,9 @@ export default async function TenantsPage() {
         title="Tenants"
         description="All tenants and prospects."
         action={
-          <Link href="/property/tenants/new">
+          <div className="flex gap-2"><Link href="/property/import"><Button variant="secondary">Import</Button></Link><Link href="/property/tenants/new">
             <Button>+ New Tenant</Button>
-          </Link>
+          </Link></div>
         }
       />
 

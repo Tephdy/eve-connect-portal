@@ -1,13 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, Moon, Sun, Monitor, Plus } from "lucide-react";
+import { Moon, Sun, Monitor, Plus } from "lucide-react";
 import { useTheme } from "next-themes";
 import { SearchBar } from "./search-bar";
 import { RolePill } from "./role-badge";
+import { NotificationBell } from "./notification-bell";
 import type { UserRole } from "@/lib/auth/get-user-roles";
+import type { Reminder } from "@/lib/calendar/reminders";
 
-export function Topbar({ roles }: { roles: UserRole[] }) {
+export function Topbar({
+  roles,
+  reminders,
+}: {
+  roles: UserRole[];
+  reminders: Reminder[];
+}) {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -38,13 +46,7 @@ export function Topbar({ roles }: { roles: UserRole[] }) {
 
         <div className="mx-1 h-6 w-px bg-ink-200 dark:bg-white/[0.08]" />
 
-        <button
-          aria-label="Notifications"
-          className="relative rounded-lg p-2 text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900 dark:hover:bg-white/[0.05]"
-        >
-          <Bell className="h-[18px] w-[18px]" />
-          <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-danger-500" />
-        </button>
+        <NotificationBell reminders={reminders} />
 
         <button
           onClick={toggleTheme}

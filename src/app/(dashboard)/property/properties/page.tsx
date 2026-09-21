@@ -23,9 +23,9 @@ export default async function PropertiesPage() {
         title="Properties"
         description="All properties in the portfolio."
         action={
-          <Link href="/property/properties/new">
+          <div className="flex gap-2"><Link href="/property/import"><Button variant="secondary">Import</Button></Link><Link href="/property/properties/new">
             <Button>+ New Property</Button>
-          </Link>
+          </Link></div>
         }
       />
 

@@ -7,6 +7,7 @@ import { onJobOrderCostApproved } from "./consumers/joborder-cost-approved";
 import { onJobOrderCostRejected } from "./consumers/joborder-cost-rejected";
 import { onJobOrderCompleted } from "./consumers/joborder-completed";
 import { onInvoicePaid } from "./consumers/invoice-paid";
+import { onImportCompleted } from "./consumers/import-completed";
 
 export const handlers: Record<string, (payload: any) => Promise<void>> = {
   "tenant.created": onTenantCreated,
@@ -18,4 +19,5 @@ export const handlers: Record<string, (payload: any) => Promise<void>> = {
   "joborder.cost_rejected": onJobOrderCostRejected,
   "joborder.completed": onJobOrderCompleted,
   "invoice.paid": onInvoicePaid,
+  "import.completed": onImportCompleted,
 };

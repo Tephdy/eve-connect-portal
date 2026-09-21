@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/get-session";
 import { getUserRoles } from "@/lib/auth/get-user-roles";
+import { getReminders } from "@/lib/calendar/reminders";
 import { Sidebar } from "@/components/shell/sidebar";
 import { Topbar } from "@/components/shell/topbar";
 
@@ -14,6 +15,14 @@ export default async function DashboardLayout({
 
   const roles = await getUserRoles();
 
+  // Load reminders for the bell — fail silently if anything goes wrong
+  let reminders = [] as Awaited<ReturnType<typeof getReminders>>;
+  try {
+    reminders = await getReminders();
+  } catch (err) {
+    console.error("[layout] failed to load reminders", err);
+  }
+
   return (
     <div className="app-shell">
       <aside className="app-sidebar border-r border-ink-200/60 bg-surface dark:border-white/[0.06]">
@@ -21,7 +30,7 @@ export default async function DashboardLayout({
       </aside>
 
       <header className="app-header border-b border-ink-200/60 bg-surface/80 backdrop-blur-md dark:border-white/[0.06] dark:bg-surface/70">
-        <Topbar roles={roles} />
+        <Topbar roles={roles} reminders={reminders} />
       </header>
 
       <main className="app-main">

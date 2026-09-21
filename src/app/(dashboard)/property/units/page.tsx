@@ -22,9 +22,9 @@ export default async function UnitsPage() {
         title="Units"
         description="All units across properties."
         action={
-          <Link href="/property/units/new">
+          <div className="flex gap-2"><Link href="/property/import"><Button variant="secondary">Import</Button></Link><Link href="/property/units/new">
             <Button>+ New Unit</Button>
-          </Link>
+          </Link></div>
         }
       />
 
