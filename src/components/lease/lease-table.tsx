@@ -14,6 +14,16 @@ const STATUS_TONE: Record<string, "gray" | "green" | "yellow" | "red" | "brand">
   terminated: "red",
 };
 
+const TERM_LABEL: Record<string, string> = {
+  "1_month": "1 month",
+  "3_months": "3 months",
+  "6_months": "6 months",
+  "1_year": "1 year",
+  "2_years": "2 years",
+  "3_years": "3 years",
+  other: "Other",
+};
+
 export function LeaseTable({ leases }: { leases: Lease[] }) {
   return (
     <Card className="overflow-hidden">
@@ -24,6 +34,7 @@ export function LeaseTable({ leases }: { leases: Lease[] }) {
               <TH>Lease</TH>
               <TH>Tenant</TH>
               <TH>Term</TH>
+              <TH>Dates</TH>
               <TH className="text-right">Rent</TH>
               <TH>Status</TH>
               <TH className="text-right"></TH>
@@ -51,6 +62,15 @@ export function LeaseTable({ leases }: { leases: Lease[] }) {
                   </Link>
                 </TD>
                 <TD className="text-ink-600">{l.tenant_name ?? "—"}</TD>
+                <TD>
+                  {l.term ? (
+                    <span className="text-sm text-ink-700">
+                      {TERM_LABEL[l.term] ?? l.term}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-ink-400">—</span>
+                  )}
+                </TD>
                 <TD>
                   <div className="text-xs text-ink-500">
                     {new Date(l.start_date).toLocaleDateString("en-PH", {

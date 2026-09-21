@@ -12,6 +12,7 @@ export type Lease = {
   move_in_date: string | null;
   due_date: string | null;
   intent: "new" | "renew" | "extend" | null;
+  term: string | null;
   monthly_rent: number;
   deposit_amount: number;
   deposit_1: number | null;
@@ -26,7 +27,7 @@ export type Lease = {
 };
 
 const LEASE_SELECT =
-  "id, unit_id, tenant_id, start_date, end_date, monthly_rent, deposit_amount, notice_period_days, status, created_at, due_date, deposit_1, deposit_2, move_in_date, intent, ad_ons, ad_ons_amount";
+  "id, unit_id, tenant_id, start_date, end_date, monthly_rent, deposit_amount, notice_period_days, status, created_at, due_date, deposit_1, deposit_2, move_in_date, intent, ad_ons, ad_ons_amount, term, unit_number, tenant_name";
 
 function parseAdOns(raw: string | undefined | null): unknown[] {
   if (!raw) return [];
@@ -37,35 +38,6 @@ function logWriteError(fn: string, error: any) {
   console.error("[" + fn + "]", JSON.stringify(error, null, 2));
 }
 
-// -----------------------------------------------------------------------------
-// Enrichment — fetch unit_number and tenant_name in two batch queries
-// -----------------------------------------------------------------------------
-async function enrich(leases: Lease[]): Promise<Lease[]> {
-  if (leases.length === 0) return leases;
-  const supabase = await createClient();
-
-  const unitIds = Array.from(new Set(leases.map((l) => l.unit_id)));
-  const tenantIds = Array.from(new Set(leases.map((l) => l.tenant_id)));
-
-  const [{ data: units }, { data: tenants }] = await Promise.all([
-    supabase.from("unit").select("id, unit_number").in("id", unitIds),
-    supabase.from("tenant").select("id, full_name").in("id", tenantIds),
-  ]);
-
-  const uMap = new Map((units ?? []).map((u) => [u.id, u.unit_number]));
-  const tMap = new Map((tenants ?? []).map((t) => [t.id, t.full_name]));
-
-  leases.forEach((l) => {
-    l.unit_number = uMap.get(l.unit_id);
-    l.tenant_name = tMap.get(l.tenant_id);
-  });
-
-  return leases;
-}
-
-// -----------------------------------------------------------------------------
-// Reads
-// -----------------------------------------------------------------------------
 export async function listLeases(): Promise<Lease[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -73,7 +45,7 @@ export async function listLeases(): Promise<Lease[]> {
     .select(LEASE_SELECT)
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
-  return enrich((data ?? []) as Lease[]);
+  return (data ?? []) as Lease[];
 }
 
 export async function getLease(id: string): Promise<Lease | null> {
@@ -84,14 +56,9 @@ export async function getLease(id: string): Promise<Lease | null> {
     .eq("id", id)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) return null;
-  const [enriched] = await enrich([data as Lease]);
-  return enriched;
+  return (data as Lease) ?? null;
 }
 
-// -----------------------------------------------------------------------------
-// Writes (admin client — direct, no view)
-// -----------------------------------------------------------------------------
 export async function createLease(input: LeaseCreateInput): Promise<Lease> {
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -104,6 +71,7 @@ export async function createLease(input: LeaseCreateInput): Promise<Lease> {
       move_in_date: input.move_in_date || null,
       due_date: input.due_date || null,
       intent: input.intent ?? "new",
+      term: input.term ?? null,
       monthly_rent: input.monthly_rent,
       deposit_amount: input.deposit_amount ?? 0,
       deposit_1: input.deposit_1 ?? 0,
@@ -125,6 +93,7 @@ export async function createLease(input: LeaseCreateInput): Promise<Lease> {
 export async function updateLease(id: string, input: LeaseUpdateInput): Promise<Lease> {
   const admin = createAdminClient();
   const patch: Record<string, unknown> = {};
+
   if (input.unit_id !== undefined) patch.unit_id = input.unit_id;
   if (input.tenant_id !== undefined) patch.tenant_id = input.tenant_id;
   if (input.start_date !== undefined) patch.start_date = input.start_date;
@@ -132,6 +101,7 @@ export async function updateLease(id: string, input: LeaseUpdateInput): Promise<
   if (input.move_in_date !== undefined) patch.move_in_date = input.move_in_date || null;
   if (input.due_date !== undefined) patch.due_date = input.due_date || null;
   if (input.intent !== undefined) patch.intent = input.intent;
+  if (input.term !== undefined) patch.term = input.term;
   if (input.monthly_rent !== undefined) patch.monthly_rent = input.monthly_rent;
   if (input.deposit_amount !== undefined) patch.deposit_amount = input.deposit_amount;
   if (input.deposit_1 !== undefined) patch.deposit_1 = input.deposit_1;
@@ -144,11 +114,7 @@ export async function updateLease(id: string, input: LeaseUpdateInput): Promise<
   if (input.status !== undefined) patch.status = input.status;
 
   const { data, error } = await admin
-    .from("lease")
-    .update(patch)
-    .eq("id", id)
-    .select(LEASE_SELECT)
-    .single();
+    .from("lease").update(patch).eq("id", id).select(LEASE_SELECT).single();
   if (error) {
     logWriteError("updateLease", error);
     throw new Error(error.message);
@@ -159,9 +125,7 @@ export async function updateLease(id: string, input: LeaseUpdateInput): Promise<
 export async function terminateLease(id: string): Promise<void> {
   const admin = createAdminClient();
   const { error } = await admin
-    .from("lease")
-    .update({ status: "terminated" })
-    .eq("id", id);
+    .from("lease").update({ status: "terminated" }).eq("id", id);
   if (error) {
     logWriteError("terminateLease", error);
     throw new Error(error.message);

@@ -1,4 +1,30 @@
-"use client";
+#!/usr/bin/env node
+/**
+ * Lease form — add Property + Address fields
+ * Usage: node scaffold-lease-property.mjs
+ *
+ * Updates:
+ *   src/components/lease/lease-form.tsx                       (add property + address)
+ *   src/app/(dashboard)/property/leases/new/page.tsx          (load properties)
+ *   src/app/(dashboard)/property/leases/[id]/page.tsx         (load properties)
+ */
+
+import { mkdir, writeFile, access } from "node:fs/promises";
+import { constants } from "node:fs";
+import { join, dirname } from "node:path";
+
+const ROOT = process.cwd();
+const FILES = {};
+
+async function exists(p) {
+  try { await access(p, constants.F_OK); return true; } catch { return false; }
+}
+
+// =============================================================================
+// 1. Updated lease form
+// =============================================================================
+FILES["src/components/lease/lease-form.tsx"] =
+`"use client";
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useFormStatus } from "react-dom";
@@ -30,16 +56,6 @@ const INTENTS = [
   { value: "extend", label: "Extend" },
 ];
 
-const TERMS = [
-  { value: "1_month",  label: "1 month",  months: 1 },
-  { value: "3_months", label: "3 months", months: 3 },
-  { value: "6_months", label: "6 months", months: 6 },
-  { value: "1_year",   label: "1 year",   months: 12 },
-  { value: "2_years",  label: "2 years",  months: 24 },
-  { value: "3_years",  label: "3 years",  months: 36 },
-  { value: "other",    label: "Other (manual)", months: 0 },
-];
-
 function SubmitButton({ label }: { label: string }) {
   const { pending } = useFormStatus();
   return <Button type="submit" loading={pending}>{label}</Button>;
@@ -48,19 +64,6 @@ function SubmitButton({ label }: { label: string }) {
 function adOnsToText(raw: unknown): string {
   if (!Array.isArray(raw)) return "";
   return raw.map((x: any) => (typeof x === "string" ? x : x.text ?? "")).filter(Boolean).join(", ");
-}
-
-function addMonths(iso: string, months: number): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  const dt = new Date(y, m - 1, d);
-  dt.setMonth(dt.getMonth() + months);
-  // If original day was 31 and target month has fewer, clamp
-  const lastDay = new Date(dt.getFullYear(), dt.getMonth() + 1, 0).getDate();
-  if (dt.getDate() > lastDay) dt.setDate(lastDay);
-  const yy = dt.getFullYear();
-  const mm = String(dt.getMonth() + 1).padStart(2, "0");
-  const dd = String(dt.getDate()).padStart(2, "0");
-  return yy + "-" + mm + "-" + dd;
 }
 
 export function LeaseForm({
@@ -93,7 +96,7 @@ export function LeaseForm({
 
   const fieldError = (k: string) => (state && !state.ok ? state.fieldErrors?.[k] : undefined);
 
-  // ---- Property state ----
+  // ---- Determine initial property from the lease's unit ----
   const initialPropertyId = useMemo(() => {
     if (!lease) return "";
     const u = units.find((x) => x.id === lease.unit_id);
@@ -102,11 +105,13 @@ export function LeaseForm({
 
   const [propertyId, setPropertyId] = useState<string>(initialPropertyId);
 
+  // ---- Filter units by selected property ----
   const filteredUnits = useMemo(() => {
     if (!propertyId) return units;
     return units.filter((u) => u.property_id === propertyId);
   }, [units, propertyId]);
 
+  // Reset unit selection if it no longer matches the property
   const [unitId, setUnitId] = useState<string>(lease?.unit_id ?? "");
   useEffect(() => {
     if (unitId && !filteredUnits.some((u) => u.id === unitId)) {
@@ -114,27 +119,8 @@ export function LeaseForm({
     }
   }, [propertyId, filteredUnits, unitId]);
 
+  // ---- Selected property for address display ----
   const selectedProperty = properties.find((p) => p.id === propertyId);
-
-  // ---- Term + date auto-fill state ----
-  const [term, setTerm] = useState<string>(lease?.term ?? "1_year");
-  const [startDate, setStartDate] = useState<string>(lease?.start_date ?? "");
-  const [endDate, setEndDate] = useState<string>(lease?.end_date ?? "");
-
-  // When term or start date changes, auto-fill end date (unless "other")
-  useEffect(() => {
-    if (!startDate || !term || term === "other") return;
-    const def = TERMS.find((t) => t.value === term);
-    if (!def || def.months === 0) return;
-    const computed = addMonths(startDate, def.months);
-    // If end date is blank OR matches what the previous term would have produced,
-    // update it. Otherwise leave the user's manual override alone.
-    if (!endDate || endDate !== computed) {
-      // Only auto-update on term/start changes; user can still edit afterward
-      setEndDate(computed);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [term, startDate]);
 
   const propertyOptions = properties.map((p) => ({
     value: p.id,
@@ -143,7 +129,7 @@ export function LeaseForm({
 
   const unitOptions = filteredUnits.map((u) => ({
     value: u.id,
-    label: u.unit_number,
+    label: u.unit_number + (u.base_rent != null ? " · ₱" + Number(u.base_rent).toLocaleString("en-PH") : ""),
   }));
 
   const tenantOptions = tenants.map((t) => ({ value: t.id, label: t.full_name }));
@@ -163,6 +149,7 @@ export function LeaseForm({
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {/* Property dropdown — NOT named, so it doesn't submit; it's a UI helper */}
               <Select
                 label="Select property"
                 options={propertyOptions}
@@ -171,6 +158,7 @@ export function LeaseForm({
                 onChange={(e) => setPropertyId(e.target.value)}
               />
 
+              {/* Address — read-only display */}
               <div className="space-y-1.5">
                 <label className="block text-sm font-medium text-ink-700">Address</label>
                 <div className="flex min-h-9 items-center gap-2 rounded-md border border-ink-200 bg-surface-muted px-3 py-2 text-sm text-ink-700 dark:border-white/[0.06] dark:bg-white/[0.02]">
@@ -205,44 +193,13 @@ export function LeaseForm({
             />
           </div>
 
-          {/* ---- Intent + Term ---- */}
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              name="intent"
-              label="Intent"
-              options={INTENTS}
-              defaultValue={lease?.intent ?? "new"}
-              error={fieldError("intent")}
-            />
-            <Select
-              name="term"
-              label="Contract term"
-              options={TERMS.map((t) => ({ value: t.value, label: t.label }))}
-              value={term}
-              onChange={(e) => setTerm(e.target.value)}
-              error={fieldError("term")}
-              hint={term === "other" ? "Enter the end date manually" : "End date auto-calculated from start date"}
-            />
-          </div>
-
-          {/* ---- Dates ---- */}
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              name="start_date"
-              label="Start date"
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              error={fieldError("start_date")}
-            />
-            <Input
-              name="end_date"
-              label="End of contract"
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              error={fieldError("end_date")}
-            />
+          <div className="grid grid-cols-3 gap-4">
+            <Select name="intent" label="Intent" options={INTENTS}
+              defaultValue={lease?.intent ?? "new"} error={fieldError("intent")} />
+            <Input name="start_date" label="Start date" type="date"
+              defaultValue={lease?.start_date ?? ""} error={fieldError("start_date")} />
+            <Input name="end_date" label="End of contract" type="date"
+              defaultValue={lease?.end_date ?? ""} error={fieldError("end_date")} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -301,3 +258,120 @@ export function LeaseForm({
     </Card>
   );
 }
+`;
+
+// =============================================================================
+// 2. Updated /property/leases/new page — load properties
+// =============================================================================
+FILES["src/app/(dashboard)/property/leases/new/page.tsx"] =
+`import { requirePagePermission } from "@/lib/auth/guard";
+import { listUnits } from "@/lib/db/units";
+import { listTenants } from "@/lib/db/tenants";
+import { listProperties } from "@/lib/db/properties";
+import { PageHeader } from "@/components/layout/page-header";
+import { LeaseForm } from "@/components/lease/lease-form";
+
+export default async function NewLeasePage() {
+  await requirePagePermission("lease:create");
+  const [units, tenants, properties] = await Promise.all([
+    listUnits(),
+    listTenants(),
+    listProperties(),
+  ]);
+
+  return (
+    <div>
+      <PageHeader title="New Lease" description="Create a lease agreement." />
+      <LeaseForm
+        mode="create"
+        units={units}
+        tenants={tenants}
+        properties={properties}
+      />
+    </div>
+  );
+}
+`;
+
+// =============================================================================
+// 3. Updated /property/leases/[id] page — load properties
+// =============================================================================
+FILES["src/app/(dashboard)/property/leases/[id]/page.tsx"] =
+`import { notFound } from "next/navigation";
+import { requirePagePermission } from "@/lib/auth/guard";
+import { getLease } from "@/lib/db/leases";
+import { listUnits } from "@/lib/db/units";
+import { listTenants } from "@/lib/db/tenants";
+import { listProperties } from "@/lib/db/properties";
+import { PageHeader } from "@/components/layout/page-header";
+import { LeaseForm } from "@/components/lease/lease-form";
+import { TerminateLeaseButton } from "@/components/lease/terminate-lease-button";
+
+export default async function LeaseDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  await requirePagePermission("lease:read");
+  const { id } = await params;
+  const lease = await getLease(id);
+  if (!lease) notFound();
+
+  const [units, tenants, properties] = await Promise.all([
+    listUnits(),
+    listTenants(),
+    listProperties(),
+  ]);
+
+  return (
+    <div>
+      <PageHeader
+        title={"Lease for Unit " + (lease.unit_number ?? "")}
+        description={lease.tenant_name ?? ""}
+        action={lease.status !== "terminated" ? <TerminateLeaseButton id={lease.id} /> : undefined}
+      />
+      <LeaseForm
+        mode="edit"
+        lease={lease}
+        units={units}
+        tenants={tenants}
+        properties={properties}
+      />
+    </div>
+  );
+}
+`;
+
+// -----------------------------------------------------------------------------
+// Runner
+// -----------------------------------------------------------------------------
+async function main() {
+  const pkg = join(ROOT, "package.json");
+  if (!(await exists(pkg))) {
+    console.error("package.json not found. Run from project root.");
+    process.exit(1);
+  }
+
+  console.log("Lease form — Property + Address\n");
+
+  let count = 0;
+  for (const [relPath, content] of Object.entries(FILES)) {
+    const full = join(ROOT, relPath);
+    const exists_ = await exists(full);
+    console.log((exists_ ? "  ~ " : "  + ") + relPath);
+    await mkdir(dirname(full), { recursive: true });
+    await writeFile(full, content, "utf8");
+    count++;
+  }
+
+  console.log("\nDone — " + count + " file(s) written.\n");
+  console.log("Next:");
+  console.log("  npm run typecheck");
+  console.log("  npm run dev");
+  console.log("  Visit /property/leases/new");
+}
+
+main().catch((err) => {
+  console.error("Failed:", err);
+  process.exit(1);
+});

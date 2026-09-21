@@ -22,9 +22,14 @@ export default async function LeasesPage() {
         title="Leases"
         description="All lease agreements."
         action={
-          <Link href="/property/leases/new">
-            <Button>+ New Lease</Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/property/import">
+              <Button variant="secondary">Import</Button>
+            </Link>
+            <Link href="/property/leases/new">
+              <Button>+ New Lease</Button>
+            </Link>
+          </div>
         }
       />
 
