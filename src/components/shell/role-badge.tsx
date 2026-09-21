@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { useDismissable } from "@/lib/hooks/use-dismissable";
 import type { UserRole } from "@/lib/auth/get-user-roles";
 
 const LABELS: Record<string, string> = {
@@ -16,6 +17,11 @@ const LABELS: Record<string, string> = {
 
 export function RolePill({ roles }: { roles: UserRole[] }) {
   const [open, setOpen] = useState(false);
+  const ref = useDismissable({
+    active: open,
+    onDismiss: () => setOpen(false),
+  });
+
   if (roles.length === 0) return null;
 
   const primary = roles[0];
@@ -31,7 +37,7 @@ export function RolePill({ roles }: { roles: UserRole[] }) {
   }
 
   return (
-    <div className="relative">
+    <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
         className="inline-flex items-center gap-1.5 rounded-full border border-ink-200 bg-surface px-3 py-1 text-xs font-medium text-ink-700 transition-colors hover:border-ink-300 dark:border-white/[0.06] dark:bg-white/[0.03] dark:text-ink-600 dark:hover:border-white/[0.10]"
@@ -44,19 +50,16 @@ export function RolePill({ roles }: { roles: UserRole[] }) {
         />
       </button>
       {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-1.5 min-w-[180px] rounded-lg border border-ink-200 bg-surface p-1 shadow-lg dark:border-white/[0.08] dark:bg-surface-raised">
-            {roles.map((r) => (
-              <div
-                key={r.role_key}
-                className="rounded-md px-3 py-1.5 text-sm text-ink-700 dark:text-ink-600"
-              >
-                {LABELS[r.role_key] ?? r.role_key}
-              </div>
-            ))}
-          </div>
-        </>
+        <div className="absolute right-0 top-full z-50 mt-1.5 min-w-[180px] rounded-lg border border-ink-200 bg-surface p-1 shadow-lg dark:border-white/[0.08] dark:bg-surface-raised">
+          {roles.map((r) => (
+            <div
+              key={r.role_key}
+              className="rounded-md px-3 py-1.5 text-sm text-ink-700 dark:text-ink-600"
+            >
+              {LABELS[r.role_key] ?? r.role_key}
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

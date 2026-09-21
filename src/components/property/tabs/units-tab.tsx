@@ -1,0 +1,78 @@
+import Link from "next/link";
+import { DoorOpen } from "lucide-react";
+import { Card, CardBody } from "@/components/ui/card";
+import { StatusPill } from "@/components/dashboard/status-pill";
+import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
+import { formatPHP } from "@/lib/utils/format-php";
+import type { PropertyProfile } from "@/lib/db/property-profile";
+
+const STATUS_TONE: Record<string, "green" | "brand" | "yellow" | "red" | "gray"> = {
+  vacant: "green",
+  occupied: "brand",
+  reserved: "yellow",
+  maintenance: "red",
+  unavailable: "gray",
+};
+
+export function PropertyUnitsTab({ profile }: { profile: PropertyProfile }) {
+  if (profile.units.length === 0) {
+    return (
+      <Card>
+        <CardBody className="py-16 text-center text-sm text-ink-500">
+          No units yet for this property.
+        </CardBody>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="overflow-hidden">
+      <CardBody className="p-0">
+        <Table>
+          <THead>
+            <TR>
+              <TH>Unit</TH>
+              <TH>Layout</TH>
+              <TH className="text-right">Rent</TH>
+              <TH>Status</TH>
+              <TH className="text-right"></TH>
+            </TR>
+          </THead>
+          <TBody>
+            {profile.units.map((u) => (
+              <TR key={u.id}>
+                <TD>
+                  <Link href={"/property/units/" + u.id} className="flex items-center gap-3 group">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400">
+                      <DoorOpen className="h-4 w-4" />
+                    </div>
+                    <span className="font-medium text-ink-900 group-hover:text-brand-600 dark:group-hover:text-brand-400">
+                      {u.unit_number}
+                    </span>
+                  </Link>
+                </TD>
+                <TD className="text-sm text-ink-600">
+                  {u.bedrooms != null ? u.bedrooms + "BR" : "—"}
+                  {u.area_sqm != null ? " · " + u.area_sqm + " sqm" : ""}
+                </TD>
+                <TD className="text-right font-medium text-ink-900">
+                  {u.base_rent != null ? formatPHP(u.base_rent) : "—"}
+                </TD>
+                <TD>
+                  <StatusPill tone={STATUS_TONE[u.status] ?? "gray"} dot>
+                    {u.status}
+                  </StatusPill>
+                </TD>
+                <TD className="text-right">
+                  <Link href={"/property/units/" + u.id} className="text-sm font-medium text-brand-600 hover:underline dark:text-brand-400">
+                    View
+                  </Link>
+                </TD>
+              </TR>
+            ))}
+          </TBody>
+        </Table>
+      </CardBody>
+    </Card>
+  );
+}

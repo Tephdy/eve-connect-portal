@@ -9,6 +9,7 @@ export const jobOrderCreateSchema = z.object({
   priority: z.enum(jobPriorities).default("normal"),
   description: z.string().min(5, "Description is too short").max(2000),
   cost_estimate: z.coerce.number().min(0).default(0),
+  scheduled_date: z.string().optional().or(z.literal("")),
   status: z.enum(jobStatuses).default("open"),
 });
 

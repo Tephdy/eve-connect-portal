@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 import {
   LayoutDashboard,
   Building2,
@@ -21,12 +22,14 @@ import {
   Wallet,
   CheckSquare,
   BarChart3,
-  Calendar as CalendarIcon,
   ShieldCheck,
+  Calendar as CalendarIcon,
+  ChevronDown,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import type { UserRole } from "@/lib/auth/get-user-roles";
+import { useSidebarState } from "@/lib/hooks/use-sidebar-state";
 import { UserMenu } from "./user-menu";
 
 type NavItem = {
@@ -55,7 +58,7 @@ const GROUPS: NavGroup[] = [
       { href: "/property/units",      label: "Units",      icon: DoorOpen, roles: ["property_rep", "executive", "marketing", "maintenance"] },
       { href: "/property/tenants",    label: "Tenants",    icon: Users, roles: ["property_rep", "executive"] },
       { href: "/property/leases",     label: "Leases",     icon: FileText, roles: ["property_rep", "executive"] },
-      { href: "/property/calendar",    label: "Calendar",    icon: CalendarIcon, roles: ["property_rep", "executive"] },
+      { href: "/property/calendar",   label: "Calendar",   icon: CalendarIcon, roles: ["property_rep", "executive"] },
       { href: "/property/contracts",  label: "Contracts",  icon: FileSignature, roles: ["property_rep", "executive"] },
       { href: "/property/templates",  label: "Templates",  icon: ScrollText, roles: ["property_rep", "executive"] },
     ],
@@ -75,10 +78,10 @@ const GROUPS: NavGroup[] = [
     roles: ["accounting", "executive"],
     items: [
       { href: "/accounting",           label: "Overview",  icon: BarChart3, roles: ["accounting", "executive"], exact: true },
+      { href: "/accounting/calendar",  label: "Calendar",  icon: CalendarIcon, roles: ["accounting", "executive"] },
       { href: "/accounting/invoices",  label: "Invoices",  icon: Receipt, roles: ["accounting", "executive"] },
       { href: "/accounting/payments",  label: "Payments",  icon: CreditCard, roles: ["accounting", "executive"] },
       { href: "/accounting/deposits",  label: "Deposits",  icon: Wallet, roles: ["accounting", "executive"] },
-      { href: "/accounting/calendar",  label: "Calendar",  icon: CalendarIcon, roles: ["accounting", "executive"] },
       { href: "/accounting/approvals", label: "Approvals", icon: CheckSquare, roles: ["accounting", "executive"] },
     ],
   },
@@ -87,6 +90,7 @@ const GROUPS: NavGroup[] = [
     roles: ["maintenance", "executive", "property_rep"],
     items: [
       { href: "/maintenance",            label: "Job Orders", icon: Wrench, roles: ["maintenance", "executive", "property_rep"], exact: true },
+      { href: "/maintenance/calendar",   label: "Calendar",   icon: CalendarIcon, roles: ["maintenance", "executive", "property_rep"] },
       { href: "/maintenance/assets",     label: "Assets",     icon: Package, roles: ["maintenance", "executive"] },
       { href: "/maintenance/task-types", label: "Task Types", icon: Settings2, roles: ["executive"] },
     ],
@@ -110,6 +114,7 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const keys = roles.map((r) => r.role_key);
+  const { openGroups, toggleGroup, openGroup, mounted } = useSidebarState();
 
   const visibleGroups: NavGroup[] = GROUPS.map((g) => {
     if (!g.roles.includes("*") && !g.roles.some((r) => keys.includes(r))) return null;
@@ -120,63 +125,110 @@ export function Sidebar({
     return { ...g, items };
   }).filter((g): g is NavGroup => g !== null);
 
+  useEffect(() => {
+    if (!mounted) return;
+    const currentGroup = visibleGroups.find((g) =>
+      g.items.some((item) => {
+        if (item.exact) return pathname === item.href;
+        return pathname === item.href || pathname.startsWith(item.href + "/");
+      })
+    );
+    if (currentGroup && !openGroups.includes(currentGroup.label)) {
+      openGroup(currentGroup.label);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, mounted]);
+
+  function isItemActive(item: NavItem) {
+    if (item.exact) return pathname === item.href;
+    return pathname === item.href || pathname.startsWith(item.href + "/");
+  }
+
   return (
-    <div className="flex h-full flex-col bg-surface">
-      <div className="flex h-16 shrink-0 items-center gap-2.5 border-b border-ink-200/60 px-5 dark:border-white/[0.06]">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-gradient shadow-glow-sm">
+    <div
+      className="flex h-full w-full flex-col overflow-hidden"
+      style={{ background: "rgb(var(--sidebar-bg))" }}
+    >
+      {/* Brand header */}
+      <div className="flex h-16 shrink-0 items-center border-b border-ink-200/40 px-4 dark:border-white/[0.05]">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-gradient shadow-glow-sm">
           <span className="text-sm font-bold text-white">A</span>
         </div>
-        <span className="text-[15px] font-semibold tracking-tight text-ink-900">
+        <span className="ml-2.5 truncate text-[15px] font-semibold tracking-tight text-ink-900">
           Apartment Portal
         </span>
       </div>
 
-      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
-        {visibleGroups.map((g) => (
-          <div key={g.label}>
-            <p className="mb-2 px-2.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-400">
-              {g.label}
-            </p>
-            <ul className="space-y-0.5">
-              {g.items.map((item) => {
-                const active = item.exact
-                  ? pathname === item.href
-                  : pathname === item.href || pathname.startsWith(item.href + "/");
-                const Icon = item.icon;
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        "group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-all",
-                        active
-                          ? "bg-brand-500/10 font-medium text-brand-600 dark:bg-brand-500/15 dark:text-brand-300"
-                          : "text-ink-600 hover:bg-ink-100 hover:text-ink-900 dark:hover:bg-white/[0.04] dark:hover:text-ink-900"
-                      )}
-                    >
-                      {active && (
-                        <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-brand-500" />
-                      )}
-                      <Icon
-                        className={cn(
-                          "h-[18px] w-[18px] shrink-0 transition-colors",
-                          active
-                            ? "text-brand-500 dark:text-brand-400"
-                            : "text-ink-400 group-hover:text-ink-600"
-                        )}
-                      />
-                      <span className="truncate">{item.label}</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4">
+        <div className="space-y-3">
+          {visibleGroups.map((g) => {
+            const isOpen = openGroups.includes(g.label);
+            const hasActive = g.items.some(isItemActive);
+
+            return (
+              <div key={g.label}>
+                <button
+                  onClick={() => toggleGroup(g.label)}
+                  className={cn(
+                    "group flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors",
+                    hasActive && !isOpen
+                      ? "text-brand-600 dark:text-brand-400"
+                      : "text-ink-400 hover:text-ink-600"
+                  )}
+                >
+                  <span className="truncate">{g.label}</span>
+                  <ChevronDown
+                    className={cn(
+                      "h-3 w-3 shrink-0 transition-transform duration-200",
+                      isOpen && "rotate-180"
+                    )}
+                  />
+                </button>
+
+                {isOpen && (
+                  <ul className="mt-1 space-y-0.5">
+                    {g.items.map((item) => {
+                      const active = isItemActive(item);
+                      const Icon = item.icon;
+                      return (
+                        <li key={item.href}>
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              "group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-all duration-150",
+                              active
+                                ? "bg-brand-500/12 font-medium text-brand-700 dark:bg-brand-500/20 dark:text-brand-300"
+                                : "text-ink-600 hover:bg-ink-100/80 hover:text-ink-900 dark:hover:bg-white/[0.05]"
+                            )}
+                          >
+                            {active && (
+                              <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-brand-500" />
+                            )}
+                            <Icon
+                              className={cn(
+                                "h-[17px] w-[17px] shrink-0 transition-transform duration-150",
+                                active
+                                  ? "text-brand-500 dark:text-brand-400"
+                                  : "text-ink-400 group-hover:text-ink-700 group-hover:scale-105 dark:group-hover:text-ink-800"
+                              )}
+                            />
+                            <span className="truncate">{item.label}</span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </nav>
 
-      <div className="shrink-0 border-t border-ink-200/60 p-3 dark:border-white/[0.06]">
-        <UserMenu email={email} roles={roles} />
+      {/* Footer — user menu only */}
+      <div className="shrink-0 border-t border-ink-200/40 p-2 dark:border-white/[0.05]">
+        {mounted && <UserMenu email={email} roles={roles} />}
       </div>
     </div>
   );

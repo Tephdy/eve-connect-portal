@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
+import { Calendar } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
@@ -36,6 +37,14 @@ function SubmitButton({ label }: { label: string }) {
   return <Button type="submit" loading={pending}>{label}</Button>;
 }
 
+function todayIso(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + day;
+}
+
 export function JobOrderForm({
   mode,
   job,
@@ -55,6 +64,7 @@ export function JobOrderForm({
   useEffect(() => {
     if (state?.ok) {
       toast.push(mode === "create" ? "Job order created" : "Job order updated", "success");
+      if (mode === "edit") router.refresh();
     } else if (state && !state.ok) {
       toast.push(state.error, "error");
     }
@@ -69,6 +79,9 @@ export function JobOrderForm({
   }));
   const typeOptions = taskTypes.map((t) => ({ value: t.id, label: t.name }));
 
+  // Default scheduled date: today (for new jobs) or existing value (for edits)
+  const scheduledDefault = job?.scheduled_date ?? (mode === "create" ? todayIso() : "");
+
   return (
     <Card>
       <CardBody>
@@ -81,10 +94,33 @@ export function JobOrderForm({
             name="task_type_id" label="Task type" options={typeOptions} placeholder="Select a task type"
             defaultValue={job?.task_type_id ?? ""} error={fieldError("task_type_id")} required
           />
-          <Select
-            name="priority" label="Priority" options={PRIORITIES}
-            defaultValue={job?.priority ?? "normal"} error={fieldError("priority")}
-          />
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Select
+              name="priority" label="Priority" options={PRIORITIES}
+              defaultValue={job?.priority ?? "normal"} error={fieldError("priority")}
+            />
+            <div className="space-y-1.5">
+              <label
+                htmlFor="scheduled_date"
+                className="flex items-center gap-1.5 text-sm font-medium text-ink-700"
+              >
+                <Calendar className="h-3.5 w-3.5 text-ink-400" />
+                Scheduled date
+              </label>
+              <input
+                id="scheduled_date"
+                name="scheduled_date"
+                type="date"
+                defaultValue={scheduledDefault}
+                className="h-9 w-full rounded-md border border-ink-200 bg-surface px-3 text-sm text-ink-900 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-white/[0.06]"
+              />
+              <p className="text-xs text-ink-500">
+                When the work is planned to be done.
+              </p>
+            </div>
+          </div>
+
           <Textarea
             name="description" label="Description" rows={4}
             defaultValue={job?.description ?? ""} error={fieldError("description")}

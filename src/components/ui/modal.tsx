@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { useDismissable } from "@/lib/hooks/use-dismissable";
 
 export function Modal({
   open,
@@ -19,19 +19,11 @@ export function Modal({
   children: React.ReactNode;
   size?: "sm" | "md" | "lg" | "xl";
 }) {
-  useEffect(() => {
-    function onEsc(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    if (open) {
-      document.addEventListener("keydown", onEsc);
-      document.body.style.overflow = "hidden";
-    }
-    return () => {
-      document.removeEventListener("keydown", onEsc);
-      document.body.style.overflow = "";
-    };
-  }, [open, onClose]);
+  const ref = useDismissable({
+    active: open,
+    onDismiss: onClose,
+    lockScroll: true,
+  });
 
   if (!open) return null;
 
@@ -45,20 +37,21 @@ export function Modal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-900/40 p-4 backdrop-blur-sm"
-      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
     >
       <div
+        ref={ref}
         className={cn("mt-16 w-full rounded-lg bg-surface shadow-lg", widths[size])}
-        onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-ink-200 px-5 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-ink-200 px-5 py-4 dark:border-white/[0.06]">
           <div>
             <h2 className="font-semibold text-ink-900">{title}</h2>
             {description && <p className="mt-0.5 text-sm text-ink-500">{description}</p>}
           </div>
           <button
             onClick={onClose}
-            className="rounded p-1 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
+            className="rounded p-1 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700 dark:hover:bg-white/[0.05]"
             aria-label="Close"
           >
             <X className="h-4 w-4" />

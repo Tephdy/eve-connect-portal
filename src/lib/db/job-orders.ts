@@ -13,6 +13,7 @@ export type JobOrder = {
   status: "open" | "pending_approval" | "assigned" | "in_progress" | "done" | "cancelled";
   cost_estimate: number | null;
   assigned_to: string | null;
+  scheduled_date: string | null;
   created_at: string;
   closed_at: string | null;
   unit_number?: string;
@@ -21,11 +22,7 @@ export type JobOrder = {
 };
 
 const JOB_ORDER_SELECT =
-  "id, unit_id, task_type_id, requested_by_user_id, priority, description, status, cost_estimate, assigned_to, created_at, closed_at";
-
-// -----------------------------------------------------------------------------
-// Read helpers (anon client, reads go through public.job_order view)
-// -----------------------------------------------------------------------------
+  "id, unit_id, task_type_id, requested_by_user_id, priority, description, status, cost_estimate, assigned_to, created_at, closed_at, scheduled_date";
 
 async function enrich(rows: JobOrder[]): Promise<JobOrder[]> {
   if (rows.length === 0) return rows;
@@ -61,7 +58,6 @@ export async function listJobOrders(): Promise<JobOrder[]> {
   const { data, error } = await supabase
     .from("job_order")
     .select(JOB_ORDER_SELECT)
-    .neq("status", "cancelled")   // hide cancelled by default
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   return enrich((data ?? []) as JobOrder[]);
@@ -91,19 +87,8 @@ export async function getJobOrder(id: string): Promise<JobOrder | null> {
   return enriched;
 }
 
-// -----------------------------------------------------------------------------
-// Write helpers — admin client writes DIRECTLY to maint.job_order
-// (bypasses public view + RLS; permission enforced at service layer)
-// -----------------------------------------------------------------------------
-
 function logWriteError(fn: string, error: any) {
-  console.error(`\n=== [${fn}] ERROR ===`);
-  console.error(JSON.stringify(error, null, 2));
-  console.error(`code: ${error?.code}`);
-  console.error(`message: ${error?.message}`);
-  console.error(`details: ${error?.details}`);
-  console.error(`hint: ${error?.hint}`);
-  console.error(`=== END [${fn}] ===\n`);
+  console.error("[" + fn + "]", JSON.stringify(error, null, 2));
 }
 
 export async function createJobOrder(
@@ -121,14 +106,15 @@ export async function createJobOrder(
       description: input.description,
       status: input.status,
       cost_estimate: input.cost_estimate,
+      scheduled_date: input.scheduled_date || null,
     })
     .select(JOB_ORDER_SELECT)
     .single();
 
   if (error) {
-  logWriteError("createJobOrder", error);
-  throw new Error(`${error.message}${error.hint ? " — " + error.hint : ""}`);
-}
+    logWriteError("createJobOrder", error);
+    throw new Error(error.message);
+  }
   return data as JobOrder;
 }
 
@@ -138,6 +124,9 @@ export async function updateJobOrder(id: string, input: JobOrderUpdateInput): Pr
   const fields = ["unit_id", "task_type_id", "priority", "description", "status", "cost_estimate"] as const;
   for (const f of fields) {
     if (input[f] !== undefined) patch[f] = input[f];
+  }
+  if (input.scheduled_date !== undefined) {
+    patch.scheduled_date = input.scheduled_date || null;
   }
 
   const { data, error } = await admin
@@ -164,13 +153,7 @@ export async function setJobOrderStatus(
   const patch: Record<string, unknown> = { status };
   if (extras?.assigned_to !== undefined) patch.assigned_to = extras.assigned_to;
   if (extras?.closed_at !== undefined) patch.closed_at = extras.closed_at;
-
-  const { error } = await admin
-    .schema("maint")
-    .from("job_order")
-    .update(patch)
-    .eq("id", id);
-
+  const { error } = await admin.schema("maint").from("job_order").update(patch).eq("id", id);
   if (error) {
     logWriteError("setJobOrderStatus", error);
     throw new Error(error.message);
@@ -179,7 +162,7 @@ export async function setJobOrderStatus(
 
 export async function deleteJobOrder(id: string): Promise<void> {
   const admin = createAdminClient();
-  const { error } = await admin.from("job_order").delete().eq("id", id);
+  const { error } = await admin.schema("maint").from("job_order").delete().eq("id", id);
   if (error) {
     logWriteError("deleteJobOrder", error);
     throw new Error(error.message);

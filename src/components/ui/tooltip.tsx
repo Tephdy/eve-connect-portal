@@ -23,7 +23,7 @@ export function Tooltip({
 
   return (
     <span
-      className="relative inline-flex"
+      className="relative block w-full"
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
       onFocus={() => setOpen(true)}
@@ -34,7 +34,7 @@ export function Tooltip({
         <span
           role="tooltip"
           className={cn(
-            "absolute z-50 whitespace-nowrap rounded bg-ink-900 px-2 py-1 text-xs font-medium text-white shadow-md",
+            "pointer-events-none absolute z-50 whitespace-nowrap rounded bg-ink-900 px-2 py-1 text-xs font-medium text-white shadow-md",
             positions[side]
           )}
         >

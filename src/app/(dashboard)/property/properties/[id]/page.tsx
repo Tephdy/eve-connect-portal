@@ -1,30 +1,18 @@
 import { notFound } from "next/navigation";
 import { requirePagePermission } from "@/lib/auth/guard";
-import { getProperty } from "@/lib/db/properties";
-import { PageHeader } from "@/components/layout/page-header";
-import { PropertyForm } from "@/components/property/property-form";
-import { ArchivePropertyButton } from "@/components/property/archive-property-button";
+import { getPropertyProfile } from "@/lib/db/property-profile";
+import { PropertyProfileView } from "@/components/property/property-profile";
 
-export default async function PropertyDetailPage({
+export default async function PropertyProfilePage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   await requirePagePermission("property:read");
   const { id } = await params;
-  const property = await getProperty(id);
-  if (!property) notFound();
 
-  const createdLabel = new Date(property.created_at).toLocaleDateString("en-PH");
+  const profile = await getPropertyProfile(id);
+  if (!profile) notFound();
 
-  return (
-    <div>
-      <PageHeader
-        title={property.name}
-        description={"Created " + createdLabel}
-        action={<ArchivePropertyButton id={property.id} />}
-      />
-      <PropertyForm mode="edit" property={property} />
-    </div>
-  );
+  return <PropertyProfileView profile={profile} />;
 }

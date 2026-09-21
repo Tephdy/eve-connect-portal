@@ -22,6 +22,15 @@ const PRIORITY_TONE: Record<string, "gray" | "brand" | "yellow" | "red"> = {
   urgent: "red",
 };
 
+function formatDate(iso: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-PH", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export function JobOrderTable({ jobs }: { jobs: JobOrder[] }) {
   return (
     <Card className="overflow-hidden">
@@ -32,58 +41,81 @@ export function JobOrderTable({ jobs }: { jobs: JobOrder[] }) {
               <TH>Job order</TH>
               <TH>Task</TH>
               <TH>Priority</TH>
+              <TH>Scheduled</TH>
               <TH className="text-right">Cost</TH>
               <TH>Status</TH>
               <TH className="text-right"></TH>
             </TR>
           </THead>
           <TBody>
-            {jobs.map((j) => (
-              <TR key={j.id}>
-                <TD>
-                  <Link
-                    href={"/maintenance/job-orders/" + j.id}
-                    className="flex items-center gap-3 group"
-                  >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400">
-                      <Wrench className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-medium text-ink-900 group-hover:text-brand-600 dark:group-hover:text-brand-400">
-                        {j.unit_number ?? "—"}
-                      </p>
-                      {j.property_name && (
-                        <p className="truncate text-xs text-ink-500">
-                          {j.property_name}
+            {jobs.map((j) => {
+              const isOverdue =
+                j.scheduled_date &&
+                j.status !== "done" &&
+                j.status !== "cancelled" &&
+                new Date(j.scheduled_date) < new Date();
+              return (
+                <TR key={j.id}>
+                  <TD>
+                    <Link
+                      href={"/maintenance/job-orders/" + j.id}
+                      className="flex items-center gap-3 group"
+                    >
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400">
+                        <Wrench className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-ink-900 group-hover:text-brand-600 dark:group-hover:text-brand-400">
+                          {j.unit_number ?? "—"}
                         </p>
-                      )}
-                    </div>
-                  </Link>
-                </TD>
-                <TD className="text-ink-600">{j.task_type_name ?? "—"}</TD>
-                <TD>
-                  <StatusPill tone={PRIORITY_TONE[j.priority] ?? "gray"}>
-                    {j.priority}
-                  </StatusPill>
-                </TD>
-                <TD className="text-right font-medium text-ink-900">
-                  {j.cost_estimate != null ? formatPHP(j.cost_estimate) : "—"}
-                </TD>
-                <TD>
-                  <StatusPill tone={STATUS_TONE[j.status] ?? "gray"} dot>
-                    {j.status.replace("_", " ")}
-                  </StatusPill>
-                </TD>
-                <TD className="text-right">
-                  <Link
-                    href={"/maintenance/job-orders/" + j.id}
-                    className="text-sm font-medium text-brand-600 hover:underline dark:text-brand-400"
-                  >
-                    View
-                  </Link>
-                </TD>
-              </TR>
-            ))}
+                        {j.property_name && (
+                          <p className="truncate text-xs text-ink-500">{j.property_name}</p>
+                        )}
+                      </div>
+                    </Link>
+                  </TD>
+                  <TD className="text-ink-600">{j.task_type_name ?? "—"}</TD>
+                  <TD>
+                    <StatusPill tone={PRIORITY_TONE[j.priority] ?? "gray"}>
+                      {j.priority}
+                    </StatusPill>
+                  </TD>
+                  <TD>
+                    {j.scheduled_date ? (
+                      <span
+                        className={
+                          "text-sm " +
+                          (isOverdue
+                            ? "font-medium text-danger-700 dark:text-danger-500"
+                            : "text-ink-600")
+                        }
+                      >
+                        {formatDate(j.scheduled_date)}
+                        {isOverdue && <span className="ml-1.5 text-xs">(overdue)</span>}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-ink-400">—</span>
+                    )}
+                  </TD>
+                  <TD className="text-right font-medium text-ink-900">
+                    {j.cost_estimate != null ? formatPHP(j.cost_estimate) : "—"}
+                  </TD>
+                  <TD>
+                    <StatusPill tone={STATUS_TONE[j.status] ?? "gray"} dot>
+                      {j.status.replace("_", " ")}
+                    </StatusPill>
+                  </TD>
+                  <TD className="text-right">
+                    <Link
+                      href={"/maintenance/job-orders/" + j.id}
+                      className="text-sm font-medium text-brand-600 hover:underline dark:text-brand-400"
+                    >
+                      View
+                    </Link>
+                  </TD>
+                </TR>
+              );
+            })}
           </TBody>
         </Table>
       </CardBody>
