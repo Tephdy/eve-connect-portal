@@ -10,6 +10,7 @@ import { ledgerMismatch } from "./ledger-mismatch";
 import { sameUserCreatedAndApproved } from "./same-user-created-and-approved";
 import { penaltyWithoutOverdue } from "./penalty-without-overdue";
 import { orphanInvoice } from "./orphan-invoice";
+import { meterReadingAnomaly } from "./meter-reading-anomaly";
 
 export const RULES = [
   invoicePaidNoPayment,
@@ -24,4 +25,5 @@ export const RULES = [
   sameUserCreatedAndApproved,
   penaltyWithoutOverdue,
   orphanInvoice,
+  meterReadingAnomaly,
 ];
