@@ -1,20 +1,44 @@
 import Link from "next/link";
 import { requirePagePermission } from "@/lib/auth/guard";
 import { listLeases } from "@/lib/db/leases";
+import { listProperties } from "@/lib/db/properties";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/layout/empty-state";
 import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { LeaseTable } from "@/components/lease/lease-table";
+import { LeaseFilters } from "@/components/lease/lease-filters";
 
-export default async function LeasesPage() {
+export default async function LeasesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    q?: string;
+    status?: string;
+    term?: string;
+    property?: string;
+    ends_before?: string;
+  }>;
+}) {
   await requirePagePermission("lease:read");
-  const leases = await listLeases();
+  const sp = await searchParams;
 
-  const total = leases.length;
-  const active = leases.filter((l) => l.status === "active").length;
-  const expiring = leases.filter((l) => l.status === "expiring").length;
-  const terminated = leases.filter((l) => l.status === "terminated").length;
+  const leases = await listLeases({
+    status: (sp.status as never) ?? "all",
+    term: sp.term ?? "all",
+    property_id: sp.property ?? "all",
+    q: sp.q ?? "",
+    ends_before: sp.ends_before ?? "",
+  });
+
+  // Stats reflect the full set, not the filtered view.
+  const all = await listLeases();
+  const total = all.length;
+  const active = all.filter((l) => l.status === "active").length;
+  const expiring = all.filter((l) => l.status === "expiring").length;
+  const terminated = all.filter((l) => l.status === "terminated").length;
+
+  const properties = await listProperties();
 
   return (
     <div className="space-y-6">
@@ -42,10 +66,14 @@ export default async function LeasesPage() {
         </div>
       )}
 
+      <LeaseFilters
+        properties={properties.map((p) => ({ id: p.id, name: p.name }))}
+      />
+
       {leases.length === 0 ? (
         <EmptyState
-          title="No leases yet"
-          description="Create your first lease to get started."
+          title="No leases match"
+          description="Adjust your filters, or create a new lease."
           action={
             <Link href="/property/leases/new">
               <Button>+ New Lease</Button>

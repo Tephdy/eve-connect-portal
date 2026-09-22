@@ -24,6 +24,8 @@ export type Lease = {
   created_at: string;
   unit_number?: string;
   tenant_name?: string;
+  property_id?: string;
+  property_name?: string;
 };
 
 // Must be a SINGLE literal string so Supabase can infer row shape.
@@ -127,14 +129,81 @@ export async function terminateLease(id: string): Promise<void> {
     throw new Error(error.message);
   }
 }
-export async function listLeases(): Promise<Lease[]> {
+export type LeaseFilter = {
+  status?: "all" | "draft" | "active" | "expiring" | "ended" | "terminated";
+  term?: string | "all";
+  property_id?: string | "all";
+  q?: string;
+  ends_before?: string;
+};
+
+export async function listLeases(
+  filter: LeaseFilter = {}
+): Promise<Lease[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+
+  let q = supabase
     .from("lease")
     .select(LEASE_SELECT)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(1000);
+
+  if (filter.status && filter.status !== "all") q = q.eq("status", filter.status);
+  if (filter.term && filter.term !== "all") q = q.eq("term", filter.term);
+
+  const { data, error } = await q;
   if (error) throw new Error(error.message);
-  return (data ?? []) as unknown as Lease[];
+
+  let rows = (data ?? []) as unknown as Lease[];
+
+  // Property enrichment + filter (cross-schema safe: fetch, filter in JS)
+  const unitIds = Array.from(new Set(rows.map((r) => r.unit_id).filter(Boolean)));
+  if (unitIds.length > 0) {
+    const { data: units } = await supabase
+      .from("unit")
+      .select("id, property_id")
+      .in("id", unitIds);
+
+    const propertyIds = Array.from(
+      new Set((units ?? []).map((u: any) => u.property_id).filter(Boolean))
+    );
+    const { data: properties } =
+      propertyIds.length > 0
+        ? await supabase.from("property").select("id, name").in("id", propertyIds)
+        : { data: [] as { id: string; name: string }[] };
+
+    const unitPropMap = new Map((units ?? []).map((u: any) => [u.id, u.property_id]));
+    const pMap = new Map((properties ?? []).map((p: any) => [p.id, p.name]));
+
+    rows.forEach((r) => {
+      const propId = unitPropMap.get(r.unit_id) ?? null;
+      if (propId) {
+        r.property_id = propId as string;
+        r.property_name = pMap.get(propId as string) as string | undefined;
+      }
+    });
+  }
+
+  if (filter.property_id && filter.property_id !== "all") {
+    rows = rows.filter((r) => r.property_id === filter.property_id);
+  }
+
+  const needle = filter.q?.trim().toLowerCase();
+  if (needle) {
+    rows = rows.filter(
+      (r) =>
+        (r.unit_number ?? "").toLowerCase().includes(needle) ||
+        (r.tenant_name ?? "").toLowerCase().includes(needle) ||
+        r.id.toLowerCase().includes(needle)
+    );
+  }
+
+  if (filter.ends_before) {
+    const ts = new Date(filter.ends_before).getTime();
+    rows = rows.filter((r) => new Date(r.end_date).getTime() <= ts);
+  }
+
+  return rows;
 }
 
 export async function getLease(id: string): Promise<Lease | null> {
