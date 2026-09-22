@@ -40,10 +40,10 @@ export function Pagination({
             key={p}
             onClick={() => onPageChange(p as number)}
             className={cn(
-              "h-9 min-w-9 rounded-md px-3 text-sm font-medium transition-colors",
+              "h-9 min-w-9 rounded-xl px-3 text-sm font-medium transition-all",
               p === page
-                ? "bg-brand-500 text-white"
-                : "text-ink-700 hover:bg-ink-100"
+                ? "bg-brand-gradient text-white shadow-md shadow-brand-500/30"
+                : "text-ink-700 hover:bg-white/60 dark:text-ink-300 dark:hover:bg-white/[0.06]"
             )}
           >
             {p}

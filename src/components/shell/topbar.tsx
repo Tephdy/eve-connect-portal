@@ -36,7 +36,7 @@ export function Topbar({
     : Monitor;
 
   return (
-    <div className="flex h-16 items-center gap-4 px-6">
+    <div className="glass flex h-16 items-center gap-4 rounded-none border-x-0 border-t-0 px-6">
       <div className="flex flex-1 items-center gap-4">
         <SearchBar />
       </div>
@@ -44,21 +44,21 @@ export function Topbar({
       <div className="flex items-center gap-2">
         <RolePill roles={roles} />
 
-        <div className="mx-1 h-6 w-px bg-ink-200 dark:bg-white/[0.08]" />
+        <div className="mx-1 h-6 w-px bg-ink-200/50 dark:bg-white/[0.08]" />
 
         <NotificationBell reminders={reminders} />
 
         <button
           onClick={toggleTheme}
           aria-label="Toggle theme"
-          className="rounded-lg p-2 text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900 dark:hover:bg-white/[0.05]"
+          className="rounded-xl p-2 text-ink-500 transition-colors hover:bg-white/60 hover:text-ink-900 dark:hover:bg-white/[0.06]"
         >
           <ThemeIcon className="h-[18px] w-[18px]" />
         </button>
 
-        <div className="mx-1 h-6 w-px bg-ink-200 dark:bg-white/[0.08]" />
+        <div className="mx-1 h-6 w-px bg-ink-200/50 dark:bg-white/[0.08]" />
 
-        <button className="hidden h-9 items-center gap-1.5 rounded-lg bg-brand-500 px-3.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 sm:inline-flex">
+        <button className="hidden h-9 items-center gap-1.5 rounded-xl bg-brand-gradient px-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition-all hover:shadow-lg hover:shadow-brand-500/40 sm:inline-flex">
           <Plus className="h-4 w-4" />
           Quick action
         </button>

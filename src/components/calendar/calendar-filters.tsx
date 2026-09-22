@@ -1,8 +1,8 @@
 "use client";
 
-import { Filter } from "lucide-react";
+import { Filter, X } from "lucide-react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
-import { Badge } from "@/components/ui/badge";
 import {
   ALL_TYPES,
   TYPE_COLORS,
@@ -33,17 +33,16 @@ export function CalendarFilters({
   const allActive = selectedTypes.length === 0;
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-ink-200 bg-surface px-4 py-3 dark:border-white/[0.06]">
-      <div className="flex items-center gap-2 text-xs font-medium text-ink-500">
+    <div className="glass flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3">
+      <div className="flex items-center gap-2 text-xs font-semibold text-ink-500">
         <Filter className="h-3.5 w-3.5" />
         Filters
       </div>
 
-      {/* Property selector */}
       <select
         value={selectedProperty ?? ""}
         onChange={(e) => onPropertyChange(e.target.value || null)}
-        className="h-8 rounded-md border border-ink-200 bg-surface px-2.5 text-sm text-ink-800 outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-white/[0.06]"
+        className="h-8 rounded-lg border border-white/60 bg-white/60 px-2.5 text-sm text-ink-800 backdrop-blur-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-ink-200"
       >
         <option value="">All properties</option>
         {properties.map((p) => (
@@ -53,17 +52,16 @@ export function CalendarFilters({
         ))}
       </select>
 
-      <div className="mx-1 h-5 w-px bg-ink-200 dark:bg-white/[0.08]" />
+      <div className="mx-1 h-5 w-px bg-white/60 dark:bg-white/[0.08]" />
 
-      {/* Event type toggles */}
       <div className="flex flex-wrap items-center gap-1.5">
         <button
           onClick={() => onTypesChange([])}
           className={cn(
-            "rounded-md px-2 py-1 text-xs font-medium transition-colors",
+            "rounded-lg px-2.5 py-1 text-xs font-semibold transition-all",
             allActive
-              ? "bg-brand-500 text-white"
-              : "text-ink-600 hover:bg-ink-100 dark:hover:bg-white/[0.05]"
+              ? "bg-brand-gradient text-white shadow-sm shadow-brand-500/30"
+              : "text-ink-600 hover:bg-white/60 dark:hover:bg-white/[0.06]"
           )}
         >
           All
@@ -75,10 +73,10 @@ export function CalendarFilters({
               key={t}
               onClick={() => toggleType(t)}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors",
+                "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all backdrop-blur-sm",
                 active
                   ? TYPE_COLORS[t].bg + " " + TYPE_COLORS[t].text
-                  : "text-ink-500 hover:bg-ink-100 dark:hover:bg-white/[0.05]"
+                  : "text-ink-500 hover:bg-white/60 dark:hover:bg-white/[0.06]"
               )}
             >
               <span className={cn("h-1.5 w-1.5 rounded-full", TYPE_COLORS[t].dot)} />

@@ -29,7 +29,7 @@ export function RolePill({ roles }: { roles: UserRole[] }) {
 
   if (roles.length === 1) {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-ink-200 bg-surface px-3 py-1 text-xs font-medium text-ink-700 dark:border-white/[0.06] dark:bg-white/[0.03] dark:text-ink-600">
+      <span className="inline-flex items-center gap-1.5 rounded-xl border border-white/60 bg-white/50 px-3 py-1.5 text-xs font-semibold text-ink-700 backdrop-blur-sm dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-ink-200">
         <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
         {primaryLabel}
       </span>
@@ -40,7 +40,7 @@ export function RolePill({ roles }: { roles: UserRole[] }) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1.5 rounded-full border border-ink-200 bg-surface px-3 py-1 text-xs font-medium text-ink-700 transition-colors hover:border-ink-300 dark:border-white/[0.06] dark:bg-white/[0.03] dark:text-ink-600 dark:hover:border-white/[0.10]"
+        className="inline-flex items-center gap-1.5 rounded-xl border border-white/60 bg-white/50 px-3 py-1.5 text-xs font-semibold text-ink-700 backdrop-blur-sm transition-all hover:border-white/80 hover:bg-white/70 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-ink-200 dark:hover:bg-white/[0.08]"
       >
         <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
         {primaryLabel}
@@ -50,11 +50,11 @@ export function RolePill({ roles }: { roles: UserRole[] }) {
         />
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1.5 min-w-[180px] rounded-lg border border-ink-200 bg-surface p-1 shadow-lg dark:border-white/[0.08] dark:bg-surface-raised">
+        <div className="glass-strong absolute right-0 top-full z-50 mt-2 min-w-[180px] rounded-xl p-1.5">
           {roles.map((r) => (
             <div
               key={r.role_key}
-              className="rounded-md px-3 py-1.5 text-sm text-ink-700 dark:text-ink-600"
+              className="rounded-lg px-3 py-1.5 text-sm text-ink-700 dark:text-ink-300"
             >
               {LABELS[r.role_key] ?? r.role_key}
             </div>

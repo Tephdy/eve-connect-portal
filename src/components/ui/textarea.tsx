@@ -17,7 +17,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, Props>(function Textarea
   return (
     <div className="space-y-1.5">
       {label && (
-        <label htmlFor={inputId} className="block text-sm font-medium text-ink-700">
+        <label htmlFor={inputId} className="block text-sm font-medium text-ink-700 dark:text-ink-300">
           {label}
         </label>
       )}
@@ -25,12 +25,14 @@ export const Textarea = forwardRef<HTMLTextAreaElement, Props>(function Textarea
         ref={ref}
         id={inputId}
         className={cn(
-          "w-full rounded-md border bg-surface px-3 py-2 text-sm text-ink-900",
+          "w-full rounded-xl border bg-white/60 dark:bg-white/[0.04] backdrop-blur-sm px-3 py-2 text-sm text-ink-900 dark:text-ink-100",
           "placeholder:text-ink-400 font-mono",
-          "transition-colors outline-none",
-          "focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20",
-          "disabled:cursor-not-allowed disabled:bg-ink-50 disabled:text-ink-500",
-          error ? "border-danger-500 focus:border-danger-500 focus:ring-danger-500/20" : "border-ink-200",
+          "transition-all duration-150 outline-none",
+          "focus:border-brand-500 focus:bg-white/90 dark:focus:bg-white/[0.08] focus:ring-4 focus:ring-brand-500/15",
+          "disabled:cursor-not-allowed disabled:bg-ink-50/60 disabled:text-ink-500",
+          error
+            ? "border-danger-500 focus:border-danger-500 focus:ring-danger-500/20"
+            : "border-white/60 dark:border-white/[0.08]",
           className
         )}
         {...rest}

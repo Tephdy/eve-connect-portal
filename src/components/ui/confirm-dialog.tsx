@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { useToast } from "@/components/ui/toast";
@@ -42,8 +42,20 @@ export function ConfirmDialog({
   return (
     <Modal open={open} onClose={onClose} title="" size="sm">
       <div className="flex flex-col items-center text-center">
-        <div className={variant === "danger" ? "mb-3 rounded-full bg-danger-100 p-3" : "mb-3 rounded-full bg-brand-100 p-3"}>
-          <AlertTriangle className={variant === "danger" ? "h-5 w-5 text-danger-700" : "h-5 w-5 text-brand-700"} />
+        <div
+          className={
+            variant === "danger"
+              ? "mb-3 rounded-full bg-rose-500/15 p-3 backdrop-blur-sm"
+              : "mb-3 rounded-full bg-brand-500/15 p-3 backdrop-blur-sm"
+          }
+        >
+          <AlertTriangle
+            className={
+              variant === "danger"
+                ? "h-5 w-5 text-rose-600"
+                : "h-5 w-5 text-brand-600"
+            }
+          />
         </div>
         <h3 className="text-base font-semibold text-ink-900">{title}</h3>
         {description && <p className="mt-1 text-sm text-ink-500">{description}</p>}

@@ -53,16 +53,12 @@ export async function validateImport(input: {
       admin.from("tenant").select("id, email, full_name"),
     ]);
 
-  const propByName = new Map(
-    (properties ?? []).map((p: any) => [p.name.toLowerCase(), p.id])
-  );
-  const unitByKey = new Map(
-    (units ?? []).map((u: any) => [u.property_id + "|" + u.unit_number, u.id])
-  );
-  const tenantByEmail = new Map(
+  const propByName = new Map<string, string>((properties ?? []).map((p: any) => [String(p.name).toLowerCase(), String(p.id)]));
+  const unitByKey = new Map<string, string>((units ?? []).map((u: any) => [u.property_id + "|" + u.unit_number, String(u.id)]));
+  const tenantByEmail = new Map<string, string>(
     (tenants ?? [])
       .filter((t: any) => t.email)
-      .map((t: any) => [String(t.email).toLowerCase(), t.id])
+      .map((t: any) => [String(t.email).toLowerCase(), String(t.id)])
   );
   const tenantByName = new Map(
     (tenants ?? []).map((t: any) => [String(t.full_name).toLowerCase(), t.id])

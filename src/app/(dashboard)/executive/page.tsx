@@ -18,7 +18,7 @@ import { ActivityFeed } from "@/components/dashboard/activity-feed";
 import { SectionHeader } from "@/components/dashboard/section-header";
 import { OverdueInvoicesCard } from "@/components/dashboard/overdue-invoices-card";
 import { ExpiringLeasesCard } from "@/components/dashboard/expiring-leases-card";
-import { Building2, Wallet, Home, FileText, ArrowRight } from "lucide-react";
+import { Building2, Wallet, Home, FileText, ArrowRight, TrendingUp } from "lucide-react";
 
 export default async function ExecutiveDashboard() {
   await requirePagePermission("dashboard:executive");
@@ -55,7 +55,8 @@ export default async function ExecutiveDashboard() {
           delta={15.2}
           deltaLabel="vs last month"
           sparkline={collectedSeries.length > 0 ? collectedSeries : [4, 6, 5, 8, 7, 10, 9, 12]}
-          accent="brand"
+          accent="mint"
+          icon={TrendingUp}
         />
         <StatCard
           label="Outstanding"
@@ -64,6 +65,7 @@ export default async function ExecutiveDashboard() {
           deltaLabel="vs last period"
           sparkline={invoicedSeries.length > 0 ? invoicedSeries : [12, 10, 11, 9, 10, 8, 7, 6]}
           accent="yellow"
+          icon={Wallet}
         />
         <StatCard
           label="Occupancy"
@@ -71,7 +73,8 @@ export default async function ExecutiveDashboard() {
           delta={3.1}
           deltaLabel={summary.occupied_units + " of " + summary.total_units + " units"}
           sparkline={[64, 68, 71, 70, 74, 78, 80, 82, 84, summary.occupancy_pct]}
-          accent="green"
+          accent="sky"
+          icon={Home}
         />
         <StatCard
           label="Active leases"
@@ -79,7 +82,8 @@ export default async function ExecutiveDashboard() {
           delta={5.0}
           deltaLabel={summary.leases_expiring_30d + " expiring in 30d"}
           sparkline={[12, 14, 15, 14, 16, 17, 18, 19, 20, summary.active_leases]}
-          accent="purple"
+          accent="lavender"
+          icon={FileText}
         />
       </div>
 
@@ -96,7 +100,7 @@ export default async function ExecutiveDashboard() {
                   Collected
                 </span>
                 <span className="flex items-center gap-1.5 text-ink-500">
-                  <span className="h-2 w-2 rounded-full bg-accent-500" />
+                  <span className="h-2 w-2 rounded-full bg-cyan-500" />
                   Invoiced
                 </span>
               </div>
@@ -151,7 +155,7 @@ export default async function ExecutiveDashboard() {
                 <CardBody className="space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-gradient text-white shadow-md shadow-brand-500/30">
                         <Building2 className="h-4 w-4" />
                       </div>
                       <div className="min-w-0">
@@ -163,14 +167,14 @@ export default async function ExecutiveDashboard() {
                         </p>
                       </div>
                     </div>
-                    <span className="shrink-0 text-lg font-semibold text-ink-900">
+                    <span className="shrink-0 text-lg font-bold text-ink-900">
                       {o.occupancy_pct}%
                     </span>
                   </div>
 
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-ink-100 dark:bg-white/[0.06]">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-white/60 dark:bg-white/[0.06]">
                     <div
-                      className="h-full rounded-full bg-brand-gradient"
+                      className="h-full rounded-full bg-brand-gradient transition-all"
                       style={{ width: o.occupancy_pct + "%" }}
                     />
                   </div>
@@ -210,15 +214,14 @@ function QuickAction({
   label: string;
 }) {
   return (
-    <Link
-      href={href}
-      className="group flex items-center gap-3 rounded-xl border border-ink-200/70 bg-surface p-4 transition-all hover:border-brand-300/60 hover:shadow-md dark:border-white/[0.06] dark:hover:border-brand-500/30"
-    >
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-500/10 text-brand-600 transition-colors group-hover:bg-brand-500 group-hover:text-white dark:text-brand-400">
-        <Icon className="h-4 w-4" />
+    <Link href={href} className="group">
+      <div className="glass flex items-center gap-3 rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-gradient text-white shadow-md shadow-brand-500/30 transition-transform group-hover:scale-105">
+          <Icon className="h-4 w-4" />
+        </div>
+        <span className="text-sm font-semibold text-ink-800">{label}</span>
+        <ArrowRight className="ml-auto h-3.5 w-3.5 text-ink-400 transition-transform group-hover:translate-x-0.5" />
       </div>
-      <span className="text-sm font-medium text-ink-800">{label}</span>
-      <ArrowRight className="ml-auto h-3.5 w-3.5 text-ink-400 transition-transform group-hover:translate-x-0.5" />
     </Link>
   );
 }

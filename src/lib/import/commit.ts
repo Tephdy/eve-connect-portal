@@ -90,21 +90,17 @@ export async function commitImport(input: {
   const { data: units } = await admin.from("unit").select("id, property_id, unit_number");
   const { data: tenants } = await admin.from("tenant").select("id, email, full_name");
 
-  const propByName = new Map(
-    (properties ?? []).map((p: any) => [p.name.toLowerCase(), p.id])
-  );
+  const propByName = new Map<string, string>((properties ?? []).map((p: any) => [String(p.name).toLowerCase(), String(p.id)]));
   const propAddressById = new Map(
     (properties ?? []).map((p: any) => [p.id, p.address])
   );
-  const unitByKey = new Map(
-    (units ?? []).map((u: any) => [u.property_id + "|" + u.unit_number, u.id])
-  );
-  const tenantByEmail = new Map(
+  const unitByKey = new Map<string, string>((units ?? []).map((u: any) => [u.property_id + "|" + u.unit_number, String(u.id)]));
+  const tenantByEmail = new Map<string, string>(
     (tenants ?? [])
       .filter((t: any) => t.email)
-      .map((t: any) => [String(t.email).toLowerCase(), t.id])
+      .map((t: any) => [String(t.email).toLowerCase(), String(t.id)])
   );
-  const tenantByName = new Map(
+  const tenantByName = new Map<string, string>(
     (tenants ?? []).map((t: any) => [String(t.full_name).toLowerCase(), t.id])
   );
 
@@ -247,7 +243,10 @@ export async function commitImport(input: {
         // Tenant lookup: email first, then name
         let tenantId: string | undefined;
         if (email) tenantId = tenantByEmail.get(email);
-        if (!tenantId && fullName) tenantId = tenantByName.get(fullName.toLowerCase());
+        if (!tenantId && fullName) {
+  const resolvedTenant = tenantByName.get(fullName.toLowerCase());
+  if (typeof resolvedTenant === "string") tenantId = resolvedTenant;
+}
         if (!tenantId) {
           throw new Error(
             "Tenant not found: " + (email || fullName)

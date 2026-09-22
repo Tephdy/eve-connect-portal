@@ -1,11 +1,8 @@
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate"; // ← changed: ESM import
 
 const config: Config = {
-  content: [
-  "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-  "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-  "./src/lib/**/*.{js,ts,jsx,tsx,mdx}",
-],
+  content: ["./src/**/*.{ts,tsx}"],
   darkMode: "class",
   theme: {
     extend: {
@@ -27,11 +24,22 @@ const config: Config = {
           500: "#06b6d4",
           600: "#0891b2",
         },
+        // Vivid pastel accents — for stats, cards, badges
+        vivid: {
+          yellow:   "#ffd166",
+          coral:    "#ff8c69",
+          lavender: "#c7a8ff",
+          mint:     "#7fe0b1",
+          sky:      "#7cc7ff",
+          rose:     "#ff9ec1",
+          lime:     "#b8e986",
+        },
         surface: {
           DEFAULT: "rgb(var(--surface) / <alpha-value>)",
           muted:   "rgb(var(--surface-muted) / <alpha-value>)",
           sunken:  "rgb(var(--surface-sunken) / <alpha-value>)",
           raised:  "rgb(var(--surface-raised) / <alpha-value>)",
+          glass:   "rgb(var(--surface-glass) / <alpha-value>)",
         },
         ink: {
           50:  "rgb(var(--ink-50) / <alpha-value>)",
@@ -51,21 +59,24 @@ const config: Config = {
         info:    { 50: "#eff6ff", 100: "#dbeafe", 500: "#3b82f6", 700: "#1d4ed8" },
       },
       borderRadius: {
-        sm: "6px",
-        DEFAULT: "8px",
-        md: "10px",
-        lg: "14px",
-        xl: "18px",
+        sm: "8px",
+        DEFAULT: "10px",
+        md: "12px",
+        lg: "16px",
+        xl: "20px",
         "2xl": "24px",
       },
       boxShadow: {
         xs: "0 1px 2px rgba(15, 23, 42, 0.05)",
         sm: "0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04)",
-        DEFAULT: "0 2px 6px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04)",
-        md: "0 6px 16px rgba(15, 23, 42, 0.10), 0 2px 6px rgba(15, 23, 42, 0.06)",
-        lg: "0 12px 28px rgba(15, 23, 42, 0.14), 0 4px 10px rgba(15, 23, 42, 0.06)",
+        DEFAULT: "0 4px 12px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04)",
+        md: "0 8px 24px rgba(15, 23, 42, 0.10), 0 2px 6px rgba(15, 23, 42, 0.06)",
+        lg: "0 16px 40px rgba(15, 23, 42, 0.14), 0 4px 12px rgba(15, 23, 42, 0.06)",
+        glass: "0 8px 32px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.35)",
+        "glass-dark": "0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.06)",
         glow: "0 0 0 1px rgba(59, 111, 255, 0.20), 0 8px 24px rgba(59, 111, 255, 0.22)",
         "glow-sm": "0 0 12px rgba(59, 111, 255, 0.35)",
+        "card-lift": "0 12px 32px rgba(15, 23, 42, 0.14)",
       },
       fontSize: {
         xs:   ["12px", { lineHeight: "16px" }],
@@ -85,25 +96,41 @@ const config: Config = {
       backgroundImage: {
         "brand-gradient": "linear-gradient(135deg, #3b6fff 0%, #22d3ee 100%)",
         "brand-gradient-soft": "linear-gradient(135deg, rgba(59,111,255,0.14) 0%, rgba(34,211,238,0.14) 100%)",
-        "surface-gradient": "linear-gradient(180deg, rgb(var(--surface-raised)) 0%, rgb(var(--surface)) 100%)",
+        "page-light":
+          "radial-gradient(1200px 800px at 15% 0%, #dbeafe 0%, transparent 50%), " +
+          "radial-gradient(1000px 700px at 85% 20%, #f3e8ff 0%, transparent 50%), " +
+          "radial-gradient(900px 600px at 50% 100%, #d1fae5 0%, transparent 60%), " +
+          "linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%)",
+        "page-dark":
+          "radial-gradient(1200px 800px at 15% -10%, rgba(59,111,255,0.18) 0%, transparent 50%), " +
+          "radial-gradient(1000px 700px at 85% 20%, rgba(168,85,247,0.14) 0%, transparent 50%), " +
+          "radial-gradient(900px 600px at 50% 100%, rgba(34,211,238,0.10) 0%, transparent 60%), " +
+          "linear-gradient(180deg, #0a0e1a 0%, #070a14 100%)",
       },
-      transitionDuration: { DEFAULT: "150ms" },
+      backdropBlur: {
+        xs: "4px",
+        glass: "20px",
+      },
+      transitionDuration: { DEFAULT: "180ms" },
       keyframes: {
+        "fade-in": { from: { opacity: "0" }, to: { opacity: "1" } },
+        "slide-in-top": {
+          from: { transform: "translateY(-8px)", opacity: "0" },
+          to: { transform: "translateY(0)", opacity: "1" },
+        },
         "pulse-slow": {
           "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0.5" },
+          "50%": { opacity: "0.55" },
         },
-        "fade-in": { from: { opacity: "0" }, to: { opacity: "1" } },
-        "slide-in-top": { from: { transform: "translateY(-8px)", opacity: "0" }, to: { transform: "translateY(0)", opacity: "1" } },
       },
       animation: {
-        "pulse-slow": "pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "fade-in": "fade-in 200ms ease-out",
         "slide-in-top": "slide-in-top 200ms ease-out",
+        "pulse-slow": "pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate], // ← changed: use imported symbol, not require()
 };
 
 export default config;

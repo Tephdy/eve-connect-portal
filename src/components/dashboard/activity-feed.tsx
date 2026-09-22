@@ -15,10 +15,10 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 const TONES: Record<string, string> = {
-  create: "bg-success-100 text-success-700 dark:bg-success-500/15 dark:text-success-500",
-  update: "bg-info-100 text-info-700 dark:bg-info-500/15 dark:text-info-500",
-  delete: "bg-danger-100 text-danger-700 dark:bg-danger-500/15 dark:text-danger-500",
-  archive: "bg-ink-100 text-ink-700 dark:bg-white/[0.06] dark:text-ink-500",
+  create: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300",
+  update: "bg-sky-500/20 text-sky-700 dark:text-sky-300",
+  delete: "bg-rose-500/20 text-rose-700 dark:text-rose-300",
+  archive: "bg-ink-200/60 text-ink-600 dark:bg-white/[0.06] dark:text-ink-400",
 };
 
 function timeAgo(iso: string): string {
@@ -62,14 +62,14 @@ export function ActivityFeed({
           return (
             <li
               key={a.id}
-              className="flex items-start gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-ink-50 dark:hover:bg-white/[0.03]"
+              className="flex items-start gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-white/50 dark:hover:bg-white/[0.03]"
             >
-              <div className={cn("mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md", tone)}>
+              <div className={cn("mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg backdrop-blur-sm", tone)}>
                 <Icon className="h-3.5 w-3.5" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm text-ink-800">
-                  <span className="font-medium capitalize">{a.action}</span>{" "}
+                  <span className="font-semibold capitalize">{a.action}</span>{" "}
                   <span className="text-ink-500">{a.entity_type.replace("_", " ")}</span>
                 </p>
                 <p className="truncate text-xs text-ink-500">

@@ -14,6 +14,8 @@ export type Invoice = {
   display_number: string | null;
   tenant_name?: string;
   unit_number?: string;
+  property_id?: string;
+  property_name?: string;
   paid_amount?: number;
 };
 
@@ -27,7 +29,7 @@ async function enrich(rows: Invoice[]): Promise<Invoice[]> {
 
   const { data: leases } = await supabase
     .from("lease")
-    .select("id, tenant_id, unit_id")
+    .select("id, tenant_id, unit_id, property_id")
     .in("id", leaseIds);
 
   const tenantIds = Array.from(new Set((leases ?? []).map((l) => l.tenant_id)));
@@ -38,38 +40,93 @@ async function enrich(rows: Invoice[]): Promise<Invoice[]> {
       ? supabase.from("tenant").select("id, full_name").in("id", tenantIds)
       : Promise.resolve({ data: [] as { id: string; full_name: string }[] }),
     unitIds.length > 0
-      ? supabase.from("unit").select("id, unit_number").in("id", unitIds)
-      : Promise.resolve({ data: [] as { id: string; unit_number: string }[] }),
+      ? supabase.from("unit").select("id, unit_number, property_id").in("id", unitIds)
+      : Promise.resolve({ data: [] as { id: string; unit_number: string; property_id: string | null }[] }),
   ]);
 
   const lMap = new Map((leases ?? []).map((l) => [l.id, l]));
   const tMap = new Map((tenants ?? []).map((t) => [t.id, t.full_name]));
   const uMap = new Map((units ?? []).map((u) => [u.id, u.unit_number]));
 
+  const propertyIds = Array.from(
+    new Set((units ?? []).map((u: any) => u.property_id).filter(Boolean))
+  );
+  const { data: properties } = propertyIds.length > 0
+    ? await supabase.from("property").select("id, name").in("id", propertyIds)
+    : { data: [] as { id: string; name: string }[] };
+  const pMap = new Map((properties ?? []).map((p: any) => [p.id, p.name]));
+  const unitPropMap = new Map((units ?? []).map((u: any) => [u.id, u.property_id]));
+
   rows.forEach((r) => {
     const l = lMap.get(r.lease_id);
     if (l) {
       r.tenant_name = tMap.get(l.tenant_id);
       r.unit_number = uMap.get(l.unit_id);
+      const propId = unitPropMap.get(l.unit_id);
+      if (propId) {
+        r.property_id = propId;
+        r.property_name = pMap.get(propId);
+      }
     }
   });
   return rows;
 }
 
-export async function listInvoices(filter?: "all" | "unpaid" | "overdue" | "paid"): Promise<Invoice[]> {
+export type InvoiceFilter = {
+  status?: "all" | "unpaid" | "overdue" | "paid" | "void";
+  type?: string | "all";
+  q?: string;
+  from?: string;
+  to?: string;
+  property_id?: string | "all";
+};
+
+export async function listInvoices(
+  filter: InvoiceFilter | "all" | "unpaid" | "overdue" | "paid" | "void" = "all"
+): Promise<Invoice[]> {
+  const f: InvoiceFilter =
+    typeof filter === "string" ? { status: filter } : filter;
+
   const supabase = await createClient();
   let q = supabase
     .from("invoice")
-    .select(INVOICE_SELECT)
-    .order("created_at", { ascending: false });
+    .select("*")
+    .order("due_date", { ascending: false })
+    .limit(1000);
 
-  if (filter === "unpaid")  q = q.in("status", ["unpaid", "overdue"]);
-  if (filter === "overdue") q = q.eq("status", "overdue");
-  if (filter === "paid")    q = q.eq("status", "paid");
+  if (f.status && f.status !== "all") q = q.eq("status", f.status);
+  if (f.type && f.type !== "all") q = q.eq("type", f.type);
 
   const { data, error } = await q;
   if (error) throw new Error(error.message);
-  return enrich((data ?? []) as Invoice[]);
+
+  let rows = (data ?? []) as Invoice[];
+  rows = await enrich(rows);
+
+  if (f.property_id && f.property_id !== "all") {
+    rows = rows.filter((r) => r.property_id === f.property_id);
+  }
+
+  const needle = f.q?.trim().toLowerCase();
+  if (needle) {
+    rows = rows.filter(
+      (r) =>
+        (r.display_number ?? "").toLowerCase().includes(needle) ||
+        (r.tenant_name ?? "").toLowerCase().includes(needle) ||
+        r.id.toLowerCase().includes(needle)
+    );
+  }
+
+  if (f.from) {
+    const fromTs = new Date(f.from).getTime();
+    rows = rows.filter((r) => new Date(r.due_date).getTime() >= fromTs);
+  }
+  if (f.to) {
+    const toTs = new Date(f.to).getTime();
+    rows = rows.filter((r) => new Date(r.due_date).getTime() <= toTs);
+  }
+
+  return rows;
 }
 
 export async function getInvoice(id: string): Promise<Invoice | null> {

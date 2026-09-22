@@ -14,9 +14,9 @@ const SEVERITY_ICON = {
 };
 
 const SEVERITY_COLOR = {
-  danger: "text-danger-600 dark:text-danger-500",
-  warning: "text-warning-600 dark:text-warning-500",
-  info: "text-info-600 dark:text-info-500",
+  danger: "text-rose-500",
+  warning: "text-amber-500",
+  info: "text-sky-500",
 };
 
 export function NotificationBell({ reminders }: { reminders: Reminder[] }) {
@@ -33,23 +33,23 @@ export function NotificationBell({ reminders }: { reminders: Reminder[] }) {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label="Notifications"
-        className="relative rounded-lg p-2 text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-900 dark:hover:bg-white/[0.05]"
+        className="relative rounded-xl p-2 text-ink-500 transition-colors hover:bg-white/60 hover:text-ink-900 dark:hover:bg-white/[0.06]"
       >
         <Bell className="h-[18px] w-[18px]" />
         {count > 0 && (
-          <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-500 px-1 text-[10px] font-semibold text-white">
+          <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-rose-600 px-1 text-[10px] font-bold text-white shadow-md shadow-rose-500/40">
             {count > 9 ? "9+" : count}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border border-ink-200 bg-surface shadow-lg dark:border-white/[0.08] dark:bg-surface-raised">
-          <div className="flex items-center justify-between border-b border-ink-100 px-4 py-3 dark:border-white/[0.06]">
+        <div className="glass-strong absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl">
+          <div className="flex items-center justify-between border-b border-white/40 px-4 py-3 dark:border-white/[0.06]">
             <p className="text-sm font-semibold text-ink-900">Notifications</p>
             {count > 0 && (
-              <span className="text-xs text-ink-500">
-                {count} item{count === 1 ? "" : "s"}
+              <span className="rounded-full bg-brand-500/15 px-2 py-0.5 text-[10px] font-bold text-brand-700 dark:text-brand-300">
+                {count}
               </span>
             )}
           </div>
@@ -59,7 +59,7 @@ export function NotificationBell({ reminders }: { reminders: Reminder[] }) {
               You&apos;re all caught up.
             </div>
           ) : (
-            <ul className="max-h-96 divide-y divide-ink-100 overflow-y-auto dark:divide-white/[0.04]">
+            <ul className="max-h-96 divide-y divide-white/40 overflow-y-auto dark:divide-white/[0.04]">
               {reminders.slice(0, 15).map((r) => {
                 const Icon = SEVERITY_ICON[r.severity];
                 return (
@@ -67,7 +67,7 @@ export function NotificationBell({ reminders }: { reminders: Reminder[] }) {
                     <Link
                       href={r.href}
                       onClick={() => setOpen(false)}
-                      className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-ink-50 dark:hover:bg-white/[0.03]"
+                      className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-white/50 dark:hover:bg-white/[0.03]"
                     >
                       <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", SEVERITY_COLOR[r.severity])} />
                       <div className="min-w-0 flex-1">
@@ -84,7 +84,7 @@ export function NotificationBell({ reminders }: { reminders: Reminder[] }) {
           )}
 
           {count > 15 && (
-            <div className="border-t border-ink-100 px-4 py-2 text-center text-xs text-ink-500 dark:border-white/[0.06]">
+            <div className="border-t border-white/40 px-4 py-2 text-center text-xs text-ink-500 dark:border-white/[0.06]">
               + {count - 15} more
             </div>
           )}

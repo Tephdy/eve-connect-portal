@@ -1,27 +1,29 @@
 import { cn } from "@/lib/utils/cn";
 
-type Tone = "gray" | "green" | "yellow" | "red" | "blue" | "purple" | "brand" | "accent";
+type Tone = "gray" | "green" | "yellow" | "red" | "blue" | "purple" | "brand" | "accent" | "vivid";
 
 const TONES: Record<Tone, string> = {
-  gray:   "bg-ink-100 text-ink-700 dark:bg-white/[0.06] dark:text-ink-600",
-  green:  "bg-success-100 text-success-700 dark:bg-success-500/15 dark:text-success-500",
-  yellow: "bg-warning-100 text-warning-700 dark:bg-warning-500/15 dark:text-warning-500",
-  red:    "bg-danger-100 text-danger-700 dark:bg-danger-500/15 dark:text-danger-500",
-  blue:   "bg-info-100 text-info-700 dark:bg-info-500/15 dark:text-info-500",
-  purple: "bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400",
-  brand:  "bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-400",
-  accent: "bg-accent-500/15 text-accent-600 dark:text-accent-400",
+  gray:   "bg-ink-100/80 text-ink-700 dark:bg-white/[0.06] dark:text-ink-300",
+  green:  "bg-emerald-500/15 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200",
+  yellow: "bg-amber-400/25 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200",
+  red:    "bg-rose-500/15 text-rose-800 dark:bg-rose-500/20 dark:text-rose-200",
+  blue:   "bg-sky-500/15 text-sky-800 dark:bg-sky-500/20 dark:text-sky-200",
+  purple: "bg-violet-500/15 text-violet-800 dark:bg-violet-500/20 dark:text-violet-200",
+  brand:  "bg-brand-500/15 text-brand-700 dark:bg-brand-500/25 dark:text-brand-200",
+  accent: "bg-cyan-500/15 text-cyan-800 dark:bg-cyan-500/20 dark:text-cyan-200",
+  vivid:  "bg-vivid-lavender/40 text-violet-900 dark:bg-vivid-lavender/20 dark:text-violet-100",
 };
 
 const DOTS: Record<Tone, string> = {
   gray:   "bg-ink-400",
-  green:  "bg-success-500",
-  yellow: "bg-warning-500",
-  red:    "bg-danger-500",
-  blue:   "bg-info-500",
-  purple: "bg-purple-500",
+  green:  "bg-emerald-500",
+  yellow: "bg-amber-500",
+  red:    "bg-rose-500",
+  blue:   "bg-sky-500",
+  purple: "bg-violet-500",
   brand:  "bg-brand-500",
-  accent: "bg-accent-500",
+  accent: "bg-cyan-500",
+  vivid:  "bg-violet-400",
 };
 
 export function Badge({
@@ -38,7 +40,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-0.5 text-xs font-semibold backdrop-blur-sm",
         TONES[tone],
         className
       )}

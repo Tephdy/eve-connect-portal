@@ -12,11 +12,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { cn } from "@/lib/utils/cn";
 
-// ---------------------------------------------------------------------------
-// Feature list — shown on the left panel
-// ---------------------------------------------------------------------------
 const FEATURES = [
   {
     icon: Building2,
@@ -50,9 +46,6 @@ const FEATURES = [
   },
 ];
 
-// ---------------------------------------------------------------------------
-// Form
-// ---------------------------------------------------------------------------
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
@@ -84,9 +77,8 @@ function LoginForm() {
 
   return (
     <form onSubmit={onSubmit} className="w-full max-w-sm">
-      {/* Mobile brand header */}
       <div className="mb-8 flex items-center gap-2.5 lg:hidden">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-gradient shadow-glow-sm">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-gradient shadow-glow-sm">
           <span className="text-sm font-bold text-white">A</span>
         </div>
         <span className="text-base font-semibold tracking-tight text-ink-900">
@@ -95,7 +87,7 @@ function LoginForm() {
       </div>
 
       <div className="mb-6">
-        <h2 className="text-2xl font-semibold tracking-tight text-ink-900">
+        <h2 className="text-2xl font-bold tracking-tight text-ink-900">
           Welcome back
         </h2>
         <p className="mt-1 text-sm text-ink-500">
@@ -104,17 +96,14 @@ function LoginForm() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg border border-danger-500/30 bg-danger-50 px-3.5 py-2.5 text-sm text-danger-700 dark:border-danger-500/30 dark:bg-danger-500/10 dark:text-danger-500">
+        <div className="mb-4 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2.5 text-sm text-rose-800 backdrop-blur-sm dark:text-rose-200">
           {error}
         </div>
       )}
 
       <div className="space-y-4">
         <div>
-          <label
-            htmlFor="email"
-            className="mb-1.5 block text-sm font-medium text-ink-700"
-          >
+          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-ink-700 dark:text-ink-300">
             Email
           </label>
           <input
@@ -124,16 +113,13 @@ function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            className="h-10 w-full rounded-lg border border-ink-200 bg-surface px-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+            className="h-11 w-full rounded-xl border border-white/60 bg-white/60 px-3.5 text-sm text-ink-900 placeholder:text-ink-400 backdrop-blur-sm transition-all outline-none focus:border-brand-500 focus:bg-white/90 focus:ring-4 focus:ring-brand-500/15 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-ink-100 dark:focus:bg-white/[0.08]"
             autoComplete="email"
           />
         </div>
 
         <div>
-          <label
-            htmlFor="password"
-            className="mb-1.5 block text-sm font-medium text-ink-700"
-          >
+          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-ink-700 dark:text-ink-300">
             Password
           </label>
           <input
@@ -143,7 +129,7 @@ function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
-            className="h-10 w-full rounded-lg border border-ink-200 bg-surface px-3 text-sm text-ink-900 placeholder:text-ink-400 transition-colors outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
+            className="h-11 w-full rounded-xl border border-white/60 bg-white/60 px-3.5 text-sm text-ink-900 placeholder:text-ink-400 backdrop-blur-sm transition-all outline-none focus:border-brand-500 focus:bg-white/90 focus:ring-4 focus:ring-brand-500/15 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-ink-100 dark:focus:bg-white/[0.08]"
             autoComplete="current-password"
           />
         </div>
@@ -152,7 +138,7 @@ function LoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="mt-6 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-brand-500 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-60"
+        className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-gradient text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition-all hover:shadow-xl hover:shadow-brand-500/40 active:scale-[0.99] disabled:opacity-60"
       >
         {loading ? "Signing in…" : "Sign in"}
         {!loading && <ArrowRight className="h-4 w-4" />}
@@ -170,31 +156,28 @@ function LoginForm() {
 function LoginFallback() {
   return (
     <div className="w-full max-w-sm space-y-4">
-      <div className="h-8 w-40 animate-pulse rounded-lg bg-ink-100" />
+      <div className="h-8 w-40 animate-pulse rounded-xl bg-ink-100" />
       <div className="h-4 w-56 animate-pulse rounded bg-ink-100" />
-      <div className="h-10 animate-pulse rounded-lg bg-ink-100" />
-      <div className="h-10 animate-pulse rounded-lg bg-ink-100" />
-      <div className="h-10 animate-pulse rounded-lg bg-ink-100" />
+      <div className="h-11 animate-pulse rounded-xl bg-ink-100" />
+      <div className="h-11 animate-pulse rounded-xl bg-ink-100" />
+      <div className="h-11 animate-pulse rounded-xl bg-ink-100" />
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 export default function LoginPage() {
   return (
     <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
-      {/* LEFT: brand + features */}
+      {/* LEFT: brand + features on gradient */}
       <div className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-brand-600 via-brand-700 to-brand-900 p-10 text-white lg:flex">
-        {/* Decorative gradient circles */}
-        <div className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-accent-500/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-40 -left-24 h-96 w-96 rounded-full bg-brand-400/20 blur-3xl" />
+        {/* Decorative blurred circles */}
+        <div className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-accent-500/25 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-40 -left-24 h-96 w-96 rounded-full bg-brand-400/25 blur-3xl" />
+        <div className="pointer-events-none absolute left-1/2 top-1/3 h-72 w-72 rounded-full bg-vivid-lavender/20 blur-3xl" />
 
         <div className="relative z-10">
-          {/* Logo + brand */}
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm ring-1 ring-white/20">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 backdrop-blur-md ring-1 ring-white/25">
               <span className="text-base font-bold text-white">A</span>
             </div>
             <span className="text-lg font-semibold tracking-tight">
@@ -202,9 +185,8 @@ export default function LoginPage() {
             </span>
           </div>
 
-          {/* Title + subtitle */}
           <div className="mt-16 max-w-lg">
-            <h1 className="text-4xl font-semibold leading-tight tracking-tight">
+            <h1 className="text-4xl font-bold leading-tight tracking-tight">
               Operations for modern property management.
             </h1>
             <p className="mt-4 text-base text-white/80">
@@ -214,17 +196,16 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Features grid */}
           <div className="mt-14 grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2">
             {FEATURES.map((f) => {
               const Icon = f.icon;
               return (
                 <div key={f.title} className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 ring-1 ring-white/15">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/12 backdrop-blur-md ring-1 ring-white/20">
                     <Icon className="h-4 w-4 text-white" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-white">{f.title}</p>
+                    <p className="text-sm font-semibold text-white">{f.title}</p>
                     <p className="mt-0.5 text-xs leading-relaxed text-white/70">
                       {f.description}
                     </p>
@@ -235,18 +216,19 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="relative z-10 mt-16 flex items-center justify-between text-xs text-white/60">
           <span>© {new Date().getFullYear()} Apartment Portal</span>
           <span>Internal use only</span>
         </div>
       </div>
 
-      {/* RIGHT: login form */}
-      <div className="flex items-center justify-center bg-surface-muted px-6 py-12">
-        <Suspense fallback={<LoginFallback />}>
-          <LoginForm />
-        </Suspense>
+      {/* RIGHT: glass card with the form */}
+      <div className="flex items-center justify-center px-6 py-12">
+        <div className="glass-strong w-full max-w-md rounded-3xl p-8 shadow-2xl sm:p-10">
+          <Suspense fallback={<LoginFallback />}>
+            <LoginForm />
+          </Suspense>
+        </div>
       </div>
     </div>
   );

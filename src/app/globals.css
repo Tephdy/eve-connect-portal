@@ -7,11 +7,16 @@
     "Helvetica Neue", Arial, sans-serif;
 
   --surface:        255 255 255;
-  --surface-muted:  247 249 252;
-  --surface-sunken: 240 244 249;
+  --surface-muted:  248 250 252;
+  --surface-sunken: 241 245 249;
   --surface-raised: 252 253 255;
 
-  --sidebar-bg:     248 250 252;
+  /* Glass surface colors — used by Card/Modal/etc */
+  --surface-glass:       255 255 255;
+  --surface-glass-alpha: 0.72;
+
+  --sidebar-bg:     255 255 255;
+  --sidebar-alpha:  0.65;
 
   --ink-50:  248 250 252;
   --ink-100: 241 245 249;
@@ -33,7 +38,11 @@
   --surface-sunken: 6   10  20;
   --surface-raised: 18  27  46;
 
-  --sidebar-bg:     11  17  32;
+  --surface-glass:       20 30  50;
+  --surface-glass-alpha: 0.60;
+
+  --sidebar-bg:     13  20  36;
+  --sidebar-alpha:  0.55;
 
   --ink-50:  9   14  26;
   --ink-100: 18  27  46;
@@ -59,36 +68,39 @@ html, body {
 }
 
 body {
-  background: rgb(var(--surface-muted));
   color: rgb(var(--ink-900));
   font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-.dark body {
-  background-image:
-    radial-gradient(1200px 600px at 10% -10%, rgba(59, 111, 255, 0.06), transparent),
-    radial-gradient(900px 500px at 100% 0%, rgba(34, 211, 238, 0.05), transparent);
+  background: #f8fafc;
+  background-image: theme("backgroundImage.page-light");
   background-attachment: fixed;
 }
 
-::-webkit-scrollbar { width: 8px; height: 8px; }
+.dark body {
+  background: #070a14;
+  background-image: theme("backgroundImage.page-dark");
+  background-attachment: fixed;
+}
+
+/* ---------- Scrollbars ---------- */
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgb(var(--ink-300));
+  background: rgba(148, 163, 184, 0.4);
   border-radius: 9999px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--ink-400));
+  background: rgba(100, 116, 139, 0.6);
   background-clip: content-box;
 }
 
-* { scrollbar-width: thin; scrollbar-color: rgb(var(--ink-300)) transparent; }
+* { scrollbar-width: thin; scrollbar-color: rgba(148, 163, 184, 0.4) transparent; }
 
 :focus-visible {
   outline: 2px solid theme("colors.brand.500");
@@ -104,7 +116,45 @@ body {
   color: theme("colors.brand.50");
 }
 
-/* ---------------- App shell ---------------- */
+/* ---------- Glass utility classes ---------- */
+
+.glass {
+  background: rgba(var(--surface-glass) / var(--surface-glass-alpha));
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 8px 32px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.dark .glass {
+  background: rgba(var(--surface-glass) / var(--surface-glass-alpha));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.glass-strong {
+  background: rgba(var(--surface-glass) / 0.85);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 12px 40px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.dark .glass-strong {
+  background: rgba(var(--surface-glass) / 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* ---------- App shell ---------- */
 
 .app-shell-v2 {
   display: grid;
@@ -151,7 +201,72 @@ body {
 }
 
 @media print {
-  html, body { overflow: visible !important; height: auto !important; }
+  html, body { overflow: visible !important; height: auto !important; background: white !important; }
   .no-print { display: none !important; }
   .app-main-v2 { overflow: visible !important; }
+  .glass, .glass-strong { background: white !important; backdrop-filter: none !important; }
+}
+
+
+/* ---------- Micro-interactions ---------- */
+
+/* Card hover: lift + soft glow */
+.card-lift {
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms ease;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.dark .card-lift:hover {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Icon bounce on hover of parent */
+.icon-bounce {
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.group:hover .icon-bounce {
+  transform: scale(1.1);
+}
+
+/* Arrow slide on hover of parent */
+.arrow-slide {
+  transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.group:hover .arrow-slide {
+  transform: translateX(2px);
+}
+
+/* Pulse glow for urgent items */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(244, 63, 94, 0);
+  }
+}
+.pulse-glow {
+  animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Subtle entrance for pages */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-up {
+  animation: fade-up 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth number/stat transitions */
+.stat-value {
+  transition: color 200ms ease;
 }

@@ -18,15 +18,15 @@ const ToastContext = createContext<Ctx | null>(null);
 
 const TONES = {
   success: {
-    wrap: "border-success-500/30 bg-success-50 text-success-700 dark:bg-success-700/20 dark:text-success-100",
+    wrap: "bg-emerald-500/95 text-white",
     icon: CheckCircle2,
   },
   error: {
-    wrap: "border-danger-500/30 bg-danger-50 text-danger-700 dark:bg-danger-700/20 dark:text-danger-100",
+    wrap: "bg-rose-500/95 text-white",
     icon: AlertCircle,
   },
   info: {
-    wrap: "border-info-500/30 bg-info-50 text-info-700 dark:bg-info-700/20 dark:text-info-100",
+    wrap: "bg-ink-900/95 text-white dark:bg-ink-800/95",
     icon: Info,
   },
 };
@@ -51,7 +51,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ push }}>
       {children}
 
-      {/* Top-center toast container */}
       <div className="pointer-events-none fixed inset-x-0 top-6 z-[100] flex flex-col items-center gap-3 px-4">
         {toasts.map((t) => {
           const { wrap, icon: Icon } = TONES[t.tone];
@@ -60,7 +59,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               key={t.id}
               role="status"
               className={cn(
-                "pointer-events-auto flex w-full max-w-lg items-center gap-3 rounded-lg border px-5 py-4 shadow-lg",
+                "pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-2xl border border-white/20 px-5 py-3.5 shadow-2xl backdrop-blur-md",
                 "animate-in slide-in-from-top-2 fade-in duration-200",
                 wrap
               )}
@@ -69,7 +68,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               <p className="flex-1 text-sm font-medium leading-snug">{t.message}</p>
               <button
                 onClick={() => remove(t.id)}
-                className="shrink-0 rounded p-1 transition-colors hover:bg-black/5 dark:hover:bg-white/10"
+                className="shrink-0 rounded p-1 transition-colors hover:bg-white/10"
                 aria-label="Dismiss"
               >
                 <X className="h-4 w-4" />

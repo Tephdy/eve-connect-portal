@@ -38,11 +38,11 @@ export function RevenueChart({
         <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="grad-collected" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3b6fff" stopOpacity={0.35} />
+              <stop offset="0%" stopColor="#3b6fff" stopOpacity={0.4} />
               <stop offset="100%" stopColor="#3b6fff" stopOpacity={0} />
             </linearGradient>
             <linearGradient id="grad-invoiced" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.30} />
+              <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.35} />
               <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
             </linearGradient>
           </defs>
@@ -51,7 +51,7 @@ export function RevenueChart({
             strokeDasharray="3 3"
             vertical={false}
             stroke="currentColor"
-            className="text-ink-200 dark:text-white/[0.06]"
+            className="text-ink-200/50 dark:text-white/[0.06]"
           />
           <XAxis
             dataKey="label"
@@ -73,13 +73,14 @@ export function RevenueChart({
           <Tooltip
             cursor={{ stroke: "currentColor", strokeOpacity: 0.15 }}
             contentStyle={{
-              background: "rgb(var(--surface))",
-              border: "1px solid rgb(var(--ink-200))",
-              borderRadius: 10,
+              background: "rgba(255, 255, 255, 0.85)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(255,255,255,0.5)",
+              borderRadius: 14,
               fontSize: 12,
-              boxShadow: "0 6px 16px rgba(15,23,42,0.10)",
+              boxShadow: "0 8px 32px rgba(15,23,42,0.12), inset 0 1px 0 rgba(255,255,255,0.5)",
             }}
-            labelStyle={{ color: "rgb(var(--ink-900))", fontWeight: 600 }}
+            labelStyle={{ color: "#0f172a", fontWeight: 700 }}
             formatter={(value, name) => {
               const num = typeof value === "number" ? value : Number(value ?? 0);
               const label = name === "collected" ? "Collected" : "Invoiced";
@@ -90,7 +91,7 @@ export function RevenueChart({
             type="monotone"
             dataKey="invoiced"
             stroke="#22d3ee"
-            strokeWidth={2}
+            strokeWidth={2.5}
             fill="url(#grad-invoiced)"
             dot={false}
           />
@@ -98,7 +99,7 @@ export function RevenueChart({
             type="monotone"
             dataKey="collected"
             stroke="#3b6fff"
-            strokeWidth={2}
+            strokeWidth={2.5}
             fill="url(#grad-collected)"
             dot={false}
           />

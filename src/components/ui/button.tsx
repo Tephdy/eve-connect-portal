@@ -14,22 +14,22 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const VARIANTS: Record<Variant, string> = {
   primary:
-    "bg-brand-500 text-white hover:bg-brand-600 active:bg-brand-700 disabled:bg-brand-500/50 shadow-xs",
+    "bg-brand-gradient text-white shadow-md shadow-brand-500/30 hover:shadow-lg hover:shadow-brand-500/40 active:scale-[0.98] disabled:opacity-50 disabled:shadow-none",
   secondary:
-    "bg-surface text-ink-700 border border-ink-200 hover:bg-ink-50 active:bg-ink-100 disabled:opacity-50 shadow-xs",
+    "bg-white/60 dark:bg-white/[0.06] backdrop-blur-sm text-ink-700 dark:text-ink-200 border border-white/60 dark:border-white/[0.08] shadow-sm hover:bg-white/90 dark:hover:bg-white/[0.10] active:scale-[0.98] disabled:opacity-50",
   subtle:
-    "bg-ink-100 text-ink-800 hover:bg-ink-200 active:bg-ink-300 disabled:opacity-50",
+    "bg-ink-100/70 dark:bg-white/[0.05] text-ink-800 dark:text-ink-200 hover:bg-ink-200/70 dark:hover:bg-white/[0.08] active:scale-[0.98] disabled:opacity-50",
   ghost:
-    "text-ink-600 hover:bg-ink-100 active:bg-ink-200 disabled:opacity-50",
+    "text-ink-600 hover:bg-white/60 dark:hover:bg-white/[0.06] active:scale-[0.98] disabled:opacity-50",
   danger:
-    "bg-danger-500 text-white hover:bg-danger-700 active:bg-danger-700 disabled:opacity-50 shadow-xs",
+    "bg-rose-500 text-white shadow-md shadow-rose-500/30 hover:bg-rose-600 hover:shadow-lg hover:shadow-rose-500/40 active:scale-[0.98] disabled:opacity-50",
 };
 
 const SIZES: Record<Size, string> = {
-  sm: "text-xs h-8 px-3 gap-1.5 rounded-md",
-  md: "text-sm h-9 px-3.5 gap-2 rounded-md",
-  lg: "text-sm h-10 px-4 gap-2 rounded-md",
-  icon: "h-9 w-9 rounded-md",
+  sm: "text-xs h-8 px-3 gap-1.5 rounded-lg",
+  md: "text-sm h-9 px-3.5 gap-2 rounded-xl",
+  lg: "text-sm h-10 px-4 gap-2 rounded-xl",
+  icon: "h-9 w-9 rounded-xl",
 };
 
 export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
@@ -41,8 +41,8 @@ export const Button = forwardRef<HTMLButtonElement, Props>(function Button(
       ref={ref}
       disabled={disabled || loading}
       className={cn(
-        "inline-flex items-center justify-center font-medium transition-colors",
-        "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1",
+        "inline-flex items-center justify-center font-medium transition-all duration-150",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2",
         "disabled:cursor-not-allowed select-none",
         VARIANTS[variant],
         SIZES[size],

@@ -10,19 +10,19 @@ export function Table({ children, className }: { children: React.ReactNode; clas
 
 export function THead({ children }: { children: React.ReactNode }) {
   return (
-    <thead className="border-b border-ink-200/60 dark:border-white/[0.06]">
+    <thead className="border-b border-white/50 dark:border-white/[0.06]">
       {children}
     </thead>
   );
 }
 
 export function TBody({ children }: { children: React.ReactNode }) {
-  return <tbody className="divide-y divide-ink-100 dark:divide-white/[0.04]">{children}</tbody>;
+  return <tbody className="divide-y divide-white/40 dark:divide-white/[0.04]">{children}</tbody>;
 }
 
 export function TR({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <tr className={cn("transition-colors hover:bg-ink-50/60 dark:hover:bg-white/[0.02]", className)}>
+    <tr className={cn("transition-colors hover:bg-white/50 dark:hover:bg-white/[0.03]", className)}>
       {children}
     </tr>
   );
@@ -41,7 +41,7 @@ export function TH({
     <th
       colSpan={colSpan}
       className={cn(
-        "whitespace-nowrap px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-ink-500",
+        "whitespace-nowrap px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-ink-500 dark:text-ink-500",
         className
       )}
     >
@@ -60,7 +60,7 @@ export function TD({
   colSpan?: number;
 }) {
   return (
-    <td colSpan={colSpan} className={cn("px-4 py-3.5 align-middle text-ink-700", className)}>
+    <td colSpan={colSpan} className={cn("px-4 py-3.5 align-middle text-ink-700 dark:text-ink-300", className)}>
       {children}
     </td>
   );

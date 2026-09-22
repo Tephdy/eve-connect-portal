@@ -49,14 +49,14 @@ export function JobCalendarFilters({
   const hasFilters = !!(property || statusesParam || prioritiesParam);
 
   return (
-    <div className="space-y-3 rounded-xl border border-ink-200 bg-surface p-4 dark:border-white/[0.06]">
-      <div className="flex items-center gap-2 text-xs font-medium text-ink-500">
+    <div className="glass space-y-3 rounded-2xl p-4">
+      <div className="flex items-center gap-2 text-xs font-semibold text-ink-500">
         <Filter className="h-3.5 w-3.5" />
         Filters
         {hasFilters && (
           <button
             onClick={clearAll}
-            className="ml-auto inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs text-brand-600 transition-colors hover:bg-brand-500/10 dark:text-brand-400"
+            className="ml-auto inline-flex items-center gap-1 rounded-lg px-2 py-0.5 text-xs font-medium text-brand-600 transition-colors hover:bg-brand-500/10 dark:text-brand-400"
           >
             <X className="h-3 w-3" />
             Clear all
@@ -65,11 +65,10 @@ export function JobCalendarFilters({
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {/* Property */}
         <select
           value={property}
           onChange={(e) => updateParam("property", e.target.value || null)}
-          className="h-9 rounded-md border border-ink-200 bg-surface px-3 text-sm text-ink-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-white/[0.06]"
+          className="h-9 rounded-lg border border-white/60 bg-white/60 px-3 text-sm text-ink-800 backdrop-blur-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-ink-200"
         >
           <option value="">All properties</option>
           {properties.map((p) => (
@@ -79,7 +78,6 @@ export function JobCalendarFilters({
           ))}
         </select>
 
-        {/* Priorities */}
         <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-xs text-ink-500">Priority:</span>
           {ALL_JOB_PRIORITIES.map((p) => (
@@ -87,14 +85,14 @@ export function JobCalendarFilters({
               key={p}
               onClick={() => toggleMulti("priorities", selectedPriorities, p)}
               className={cn(
-                "rounded-md px-2.5 py-1 text-xs font-medium capitalize transition-colors",
+                "rounded-lg px-2.5 py-1 text-xs font-semibold capitalize backdrop-blur-sm transition-all",
                 selectedPriorities.includes(p)
                   ? p === "urgent"
-                    ? "bg-danger-500 text-white"
+                    ? "bg-rose-500 text-white shadow-sm shadow-rose-500/30"
                     : p === "high"
-                    ? "bg-warning-500 text-white"
-                    : "bg-brand-500 text-white"
-                  : "text-ink-600 hover:bg-ink-100 dark:hover:bg-white/[0.05]"
+                    ? "bg-amber-500 text-white shadow-sm shadow-amber-500/30"
+                    : "bg-brand-gradient text-white shadow-sm shadow-brand-500/30"
+                  : "text-ink-600 hover:bg-white/60 dark:hover:bg-white/[0.06]"
               )}
             >
               {PRIORITY_LABELS[p]}
@@ -110,10 +108,10 @@ export function JobCalendarFilters({
             key={s}
             onClick={() => toggleMulti("statuses", selectedStatuses, s)}
             className={cn(
-              "rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
+              "rounded-lg px-2.5 py-1 text-xs font-semibold backdrop-blur-sm transition-all",
               selectedStatuses.includes(s)
-                ? "bg-brand-500 text-white"
-                : "text-ink-600 hover:bg-ink-100 dark:hover:bg-white/[0.05]"
+                ? "bg-brand-gradient text-white shadow-sm shadow-brand-500/30"
+                : "text-ink-600 hover:bg-white/60 dark:hover:bg-white/[0.06]"
             )}
           >
             {JOB_EVENT_LABELS[STATUS_TO_EVENT[s]] ?? s}

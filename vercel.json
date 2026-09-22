@@ -1,6 +1,16 @@
 {
   "crons": [
-    { "path": "/api/cron/invoice-overdue", "schedule": "0 1 * * *" },
-    { "path": "/api/cron/forecast",        "schedule": "0 2 * * *" }
+    {
+      "path": "/api/cron/invoice-overdue",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/forecast",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/audit",
+      "schedule": "0 2 * * *"
+    }
   ]
 }

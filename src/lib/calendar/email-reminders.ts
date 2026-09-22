@@ -160,7 +160,7 @@ export async function sendReminders(): Promise<{
     .select("id, email, full_name")
     .in("id", userIds);
 
-  const userMap = new Map((users ?? []).map((u: any) => [u.id, u]));
+  const userMap = new Map<string, any>((users ?? []).map((u: any) => [u.id, u]));
 
   const reminders = await buildReminders();
 

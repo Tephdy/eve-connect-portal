@@ -31,14 +31,14 @@ export function PropertyProfileHeader({ profile }: { profile: PropertyProfile })
         All properties
       </Link>
 
-      <div className="flex flex-wrap items-start gap-5 rounded-xl border border-ink-200 bg-surface p-6 dark:border-white/[0.06]">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-accent-500 text-white shadow-sm">
+      <div className="glass flex flex-wrap items-start gap-5 rounded-3xl p-6">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-brand-gradient text-white shadow-lg shadow-brand-500/30">
           <Building2 className="h-7 w-7" />
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight text-ink-900">
+            <h1 className="text-2xl font-bold tracking-tight text-ink-900">
               {property.name}
             </h1>
             <StatusPill tone={TYPE_TONE[property.type] ?? "gray"}>
@@ -63,10 +63,19 @@ export function PropertyProfileHeader({ profile }: { profile: PropertyProfile })
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard label="Total units" value={stats.total_units} accent="brand" />
-        <StatCard label="Occupancy" value={stats.occupancy_pct + "%"} accent="green" deltaLabel={stats.occupied + " occupied"} />
-        <StatCard label="Active leases" value={stats.active_leases} accent="purple" />
-        <StatCard label="Monthly revenue" value={formatPHP(stats.monthly_revenue)} accent="yellow" />
+        <StatCard label="Total units" value={stats.total_units} accent="sky" />
+        <StatCard
+          label="Occupancy"
+          value={stats.occupancy_pct + "%"}
+          accent="mint"
+          deltaLabel={stats.occupied + " occupied"}
+        />
+        <StatCard label="Active leases" value={stats.active_leases} accent="lavender" />
+        <StatCard
+          label="Monthly revenue"
+          value={formatPHP(stats.monthly_revenue)}
+          accent="yellow"
+        />
       </div>
     </div>
   );

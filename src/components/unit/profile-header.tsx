@@ -27,14 +27,14 @@ export function UnitProfileHeader({ profile }: { profile: UnitProfile }) {
         All units
       </Link>
 
-      <div className="flex flex-wrap items-start gap-5 rounded-xl border border-ink-200 bg-surface p-6 dark:border-white/[0.06]">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-accent-500 text-white shadow-sm">
+      <div className="glass flex flex-wrap items-start gap-5 rounded-3xl p-6">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-brand-gradient text-white shadow-lg shadow-brand-500/30">
           <DoorOpen className="h-7 w-7" />
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight text-ink-900">
+            <h1 className="text-2xl font-bold tracking-tight text-ink-900">
               Unit {unit.unit_number}
             </h1>
             <StatusPill tone={STATUS_TONE[unit.status] ?? "gray"} dot>
@@ -68,17 +68,17 @@ export function UnitProfileHeader({ profile }: { profile: UnitProfile }) {
         <StatCard
           label="Current tenant"
           value={stats.current_tenant ?? "Vacant"}
-          accent="brand"
+          accent="sky"
         />
         <StatCard
           label="Monthly rent"
           value={formatPHP(stats.monthly_rent)}
-          accent="green"
+          accent="mint"
         />
         <StatCard
           label="Tenants served"
           value={stats.total_tenants_served}
-          accent="purple"
+          accent="lavender"
           deltaLabel={stats.total_tenants_served + " all time"}
         />
         <StatCard

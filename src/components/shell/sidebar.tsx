@@ -23,6 +23,8 @@ import {
   CheckSquare,
   BarChart3,
   ShieldCheck,
+  ClipboardCheck,
+  GitCompareArrows,
   Calendar as CalendarIcon,
   ChevronDown,
   type LucideIcon,
@@ -83,6 +85,8 @@ const GROUPS: NavGroup[] = [
       { href: "/accounting/payments",  label: "Payments",  icon: CreditCard, roles: ["accounting", "executive"] },
       { href: "/accounting/deposits",  label: "Deposits",  icon: Wallet, roles: ["accounting", "executive"] },
       { href: "/accounting/approvals", label: "Approvals", icon: CheckSquare, roles: ["accounting", "executive"] },
+      { href: "/accounting/audit",                label: "Audit",          icon: ClipboardCheck,    roles: ["accounting", "executive"] },
+      { href: "/accounting/audit/reconciliation", label: "Reconciliation", icon: GitCompareArrows, roles: ["accounting", "executive"] },
     ],
   },
   {
@@ -145,13 +149,10 @@ export function Sidebar({
   }
 
   return (
-    <div
-      className="flex h-full w-full flex-col overflow-hidden"
-      style={{ background: "rgb(var(--sidebar-bg))" }}
-    >
+    <div className="glass flex h-full w-full flex-col overflow-hidden rounded-none border-y-0 border-l-0">
       {/* Brand header */}
-      <div className="flex h-16 shrink-0 items-center border-b border-ink-200/40 px-4 dark:border-white/[0.05]">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-gradient shadow-glow-sm">
+      <div className="flex h-16 shrink-0 items-center border-b border-white/40 px-4 dark:border-white/[0.06]">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-brand-gradient shadow-glow-sm">
           <span className="text-sm font-bold text-white">A</span>
         </div>
         <span className="ml-2.5 truncate text-[15px] font-semibold tracking-tight text-ink-900">
@@ -196,21 +197,18 @@ export function Sidebar({
                           <Link
                             href={item.href}
                             className={cn(
-                              "group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-all duration-150",
+                              "group relative flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm transition-all duration-150",
                               active
-                                ? "bg-brand-500/12 font-medium text-brand-700 dark:bg-brand-500/20 dark:text-brand-300"
-                                : "text-ink-600 hover:bg-ink-100/80 hover:text-ink-900 dark:hover:bg-white/[0.05]"
+                                ? "bg-brand-500 font-semibold text-white shadow-md shadow-brand-500/30"
+                                : "text-ink-600 hover:bg-white/50 hover:text-ink-900 dark:hover:bg-white/[0.06]"
                             )}
                           >
-                            {active && (
-                              <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-brand-500" />
-                            )}
                             <Icon
                               className={cn(
                                 "h-[17px] w-[17px] shrink-0 transition-transform duration-150",
                                 active
-                                  ? "text-brand-500 dark:text-brand-400"
-                                  : "text-ink-400 group-hover:text-ink-700 group-hover:scale-105 dark:group-hover:text-ink-800"
+                                  ? "text-white"
+                                  : "text-ink-400 group-hover:scale-110 group-hover:text-ink-700 dark:group-hover:text-ink-800"
                               )}
                             />
                             <span className="truncate">{item.label}</span>
@@ -226,8 +224,8 @@ export function Sidebar({
         </div>
       </nav>
 
-      {/* Footer — user menu only */}
-      <div className="shrink-0 border-t border-ink-200/40 p-2 dark:border-white/[0.05]">
+      {/* Footer */}
+      <div className="shrink-0 border-t border-white/40 p-2 dark:border-white/[0.06]">
         {mounted && <UserMenu email={email} roles={roles} />}
       </div>
     </div>

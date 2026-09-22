@@ -36,28 +36,31 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-900/40 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-900/30 p-4 backdrop-blur-md"
       role="dialog"
       aria-modal="true"
     >
       <div
         ref={ref}
-        className={cn("mt-16 w-full rounded-lg bg-surface shadow-lg", widths[size])}
+        className={cn(
+          "glass-strong mt-16 w-full rounded-2xl shadow-2xl",
+          widths[size]
+        )}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-ink-200 px-5 py-4 dark:border-white/[0.06]">
+        <div className="flex items-start justify-between gap-4 border-b border-white/40 px-6 py-4 dark:border-white/[0.06]">
           <div>
-            <h2 className="font-semibold text-ink-900">{title}</h2>
+            <h2 className="text-base font-semibold tracking-tight text-ink-900">{title}</h2>
             {description && <p className="mt-0.5 text-sm text-ink-500">{description}</p>}
           </div>
           <button
             onClick={onClose}
-            className="rounded p-1 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700 dark:hover:bg-white/[0.05]"
+            className="rounded-xl p-1.5 text-ink-400 transition-colors hover:bg-white/60 hover:text-ink-700 dark:hover:bg-white/[0.08]"
             aria-label="Close"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className="p-6">{children}</div>
       </div>
     </div>
   );

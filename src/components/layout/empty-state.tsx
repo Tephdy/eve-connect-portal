@@ -8,8 +8,8 @@ export function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-dashed border-ink-300 bg-surface px-6 py-16 text-center">
-      <p className="font-medium text-ink-800">{title}</p>
+    <div className="glass rounded-2xl px-6 py-16 text-center">
+      <p className="text-base font-semibold text-ink-800">{title}</p>
       {description && <p className="mt-1 text-sm text-ink-500">{description}</p>}
       {action && <div className="mt-5 flex justify-center">{action}</div>}
     </div>

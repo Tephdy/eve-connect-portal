@@ -5,6 +5,7 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { Button } from "@/components/ui/button";
 import { formatPHP } from "@/lib/utils/format-php";
 import type { TenantProfile } from "@/lib/db/tenant-profile";
+import { Wallet, Receipt, AlertCircle, PiggyBank } from "lucide-react";
 
 const STATUS_TONE: Record<string, "yellow" | "green" | "gray" | "red"> = {
   prospect: "yellow",
@@ -35,15 +36,14 @@ export function ProfileHeader({ profile }: { profile: TenantProfile }) {
         All tenants
       </Link>
 
-      {/* Header card */}
-      <div className="flex flex-wrap items-start gap-5 rounded-xl border border-ink-200 bg-surface p-6 dark:border-white/[0.06]">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-accent-500 text-lg font-semibold text-white shadow-sm">
+      <div className="glass flex flex-wrap items-start gap-5 rounded-3xl p-6">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-brand-gradient text-lg font-bold text-white shadow-lg shadow-brand-500/30">
           {initials(tenant.full_name)}
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-semibold tracking-tight text-ink-900">
+            <h1 className="text-2xl font-bold tracking-tight text-ink-900">
               {tenant.full_name}
             </h1>
             <StatusPill tone={STATUS_TONE[tenant.status] ?? "gray"} dot>
@@ -81,28 +81,31 @@ export function ProfileHeader({ profile }: { profile: TenantProfile }) {
         </Link>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           label="Total invoiced"
           value={formatPHP(stats.total_invoiced)}
-          accent="brand"
+          accent="sky"
+          icon={Receipt}
         />
         <StatCard
           label="Total paid"
           value={formatPHP(stats.total_paid)}
-          accent="green"
+          accent="mint"
+          icon={Wallet}
         />
         <StatCard
           label="Outstanding"
           value={formatPHP(stats.outstanding)}
           accent={stats.overdue_count > 0 ? "red" : "yellow"}
           deltaLabel={stats.overdue_count > 0 ? stats.overdue_count + " overdue" : "on track"}
+          icon={AlertCircle}
         />
         <StatCard
           label="Deposit held"
           value={formatPHP(stats.deposit_held)}
-          accent="purple"
+          accent="lavender"
+          icon={PiggyBank}
         />
       </div>
     </div>
