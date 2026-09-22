@@ -27,6 +27,8 @@ export default async function DashboardLayout({
     <DashboardShell
       sidebar={<Sidebar roles={roles} email={user.email ?? ""} />}
       topbar={<Topbar roles={roles} reminders={reminders} />}
+      roles={roles}
+      reminders={reminders}
     >
       {children}
     </DashboardShell>

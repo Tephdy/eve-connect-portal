@@ -196,8 +196,16 @@ body {
     grid-template-areas:
       "header"
       "main";
+    height: 100dvh;
   }
   .app-sidebar-v2 { display: none; }
+  .app-header-v2 { display: none; }
+  .app-main-v2 {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
 }
 
 @media print {
@@ -269,4 +277,27 @@ body {
 /* Smooth number/stat transitions */
 .stat-value {
   transition: color 200ms ease;
+}
+
+
+/* Native mobile polish */
+html, body {
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+body {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Prevent text selection on nav buttons */
+nav a, nav button {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Bottom nav safe-area on installed PWA */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body { padding-bottom: 0; }
 }
