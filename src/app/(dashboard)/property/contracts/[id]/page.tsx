@@ -67,14 +67,24 @@ export default async function ContractDetailPage({
                 />
               )}
               {contract.signed_document_url && (
+                <>
+                  <a
+                    href={"/property/contracts/" + contract.id + "/view"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block mt-3 text-sm text-brand-600 hover:underline"
+                  >
+                    Open signed document
+                  </a>
                 <a
-                  href={contract.signed_document_url}
+                  href={"/property/contracts/" + contract.id + "/print"}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block mt-3 text-sm text-brand-600 hover:underline"
+                  className="block mt-2 text-sm text-brand-600 hover:underline"
                 >
-                  Open signed document
+                  Download PDF
                 </a>
+                </>
               )}
             </div>
           ) : (

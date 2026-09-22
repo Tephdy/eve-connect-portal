@@ -98,12 +98,17 @@ export async function signContractAction(
   const lease = await getLease(contract.lease_id);
   if (!lease) return { ok: false, error: "Lease missing" };
 
-  const finalHtml = wrapPrintableHtml(
+  const finalHtml = await wrapPrintableHtml(
     "Signed Contract",
     (contract.generated_body ?? "") +
       "<div class='signature-block'><div><p><strong>Lessee</strong></p><img class='sig-img' src='" +
       signatureUrl +
-      "' alt='signature' /></div></div>"
+      "' alt='signature' /></div></div>",
+    {
+      contract_id: contract.id,
+      contract_created_at: contract.created_at,
+      lease_id: contract.lease_id,
+    }
   );
 
   const signedDocUrl = await uploadSignedHtml({
