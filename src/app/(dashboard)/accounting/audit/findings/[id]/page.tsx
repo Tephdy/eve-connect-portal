@@ -12,11 +12,12 @@ import { FindingComments } from "@/components/audit/finding-comments";
 export default async function FindingDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const _params = await params;
   await requirePagePermission("audit:read");
 
-  const finding = await getFinding(params.id);
+  const finding = await getFinding(_params.id);
   if (!finding) notFound();
 
   const comments =

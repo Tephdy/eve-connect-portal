@@ -8,12 +8,13 @@ import type { FindingStatus, Severity } from "@/lib/audit/types";
 export default async function FindingsPage({
   searchParams,
 }: {
-  searchParams: { status?: string; severity?: string };
+  searchParams: Promise<{ status?: string; severity?: string }>;
 }) {
+  const _sp = await searchParams;
   await requirePagePermission("audit:read");
 
-  const status = searchParams.status as FindingStatus | undefined;
-  const severity = searchParams.severity as Severity | undefined;
+  const status = _sp.status as FindingStatus | undefined;
+  const severity = _sp.severity as Severity | undefined;
 
   const findings = await listFindings({ status, severity });
 
