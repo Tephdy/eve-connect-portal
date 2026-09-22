@@ -9,7 +9,6 @@ import { createMeterAction } from "@/app/(dashboard)/property/meters/actions";
 const TYPES = [
   { value: "electricity", label: "Electricity" },
   { value: "water", label: "Water" },
-  { value: "gas", label: "Gas" },
   { value: "other", label: "Other" },
 ];
 

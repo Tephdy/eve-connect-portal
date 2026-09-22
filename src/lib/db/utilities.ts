@@ -2,7 +2,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export type UtilityType = "electricity" | "water" | "gas" | "other";
+export type UtilityType = "electricity" | "water" | "other";
 
 export type Meter = {
   id: string;

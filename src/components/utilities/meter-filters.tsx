@@ -8,7 +8,6 @@ const TYPES = [
   { value: "all", label: "All utilities" },
   { value: "electricity", label: "Electricity" },
   { value: "water", label: "Water" },
-  { value: "gas", label: "Gas" },
   { value: "other", label: "Other" },
 ];
 
