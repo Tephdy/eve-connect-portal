@@ -20,7 +20,8 @@ export function InquiryTable({ inquiries }: { inquiries: Inquiry[] }) {
           <THead>
             <TR>
               <TH>Prospect</TH>
-              <TH>Contact</TH>
+              <TH>Phone / Email</TH>
+              <TH>Messenger</TH>
               <TH>Interested unit</TH>
               <TH>Source</TH>
               <TH>Status</TH>

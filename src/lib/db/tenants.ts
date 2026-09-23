@@ -12,10 +12,12 @@ export type Tenant = {
   government_id: string | null;
   status: "prospect" | "active" | "former" | "blacklisted";
   created_at: string;
+  inquiry_id: string | null;
+  reservation_id: string | null;
 };
 
 const TENANT_SELECT =
-  "id, full_name, email, phone, messenger_name, government_id, status, created_at";
+  "id, full_name, email, phone, messenger_name, government_id, status, created_at, inquiry_id, reservation_id";
 
 export async function listTenants(): Promise<Tenant[]> {
   const supabase = await createClient();
@@ -35,7 +37,9 @@ export async function getTenant(id: string): Promise<Tenant | null> {
   return (data as Tenant) ?? null;
 }
 
-export async function createTenant(input: TenantCreateInput): Promise<Tenant> {
+export async function createTenant(
+  input: TenantCreateInput & { inquiry_id?: string | null; reservation_id?: string | null }
+): Promise<Tenant> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("tenant")
@@ -46,6 +50,8 @@ export async function createTenant(input: TenantCreateInput): Promise<Tenant> {
       messenger_name: input.messenger_name || null,
       government_id: input.government_id || null,
       status: input.status,
+      inquiry_id: (input as any).inquiry_id ?? null,
+      reservation_id: (input as any).reservation_id ?? null,
     })
     .select(TENANT_SELECT)
     .single();

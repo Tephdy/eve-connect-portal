@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { assertPermission } from "@/lib/auth/guard";
 import { getSession } from "@/lib/auth/get-session";
 import { createLease, updateLease, terminateLease } from "@/lib/db/leases";
+import { markReservationLeased, releaseReservation } from "@/lib/db/unit-reservations";
 import { logAudit } from "@/lib/audit/log";
 import { leaseCreateSchema, leaseUpdateSchema } from "@/lib/schemas/lease";
 import { parseForm } from "@/lib/forms/parse";
@@ -18,7 +19,45 @@ export async function createLeaseAction(
   const parsed = parseForm(leaseCreateSchema, formData);
   if (!parsed.ok) return { ok: false, error: parsed.error, fieldErrors: parsed.fieldErrors };
   const session = await getSession();
-  const lease = await createLease(parsed.data);
+  const fromReservationId =
+    String(formData.get("from_reservation_id") ?? "").trim() || null;
+
+  const lease = await createLease({
+    ...parsed.data,
+    reservation_id: fromReservationId,
+  });
+
+  // If created from a reservation: flip lease_status to active + unit to occupied
+  if (fromReservationId) {
+    try {
+      await markReservationLeased({
+        reservation_id: fromReservationId,
+        actor_id: session?.id ?? null,
+      });
+
+      // Close the reservation (this is its terminal state — it produced a lease)
+      try {
+        await releaseReservation({
+          unit_id: lease.unit_id,
+          released_by: session?.id ?? null,
+          reason: "Lease created: " + lease.id,
+          new_status: "occupied",
+        });
+      } catch (err) {
+        console.error("[createLeaseAction] releaseReservation failed:", err);
+      }
+
+      // Flip unit status — we know the unit_id from the lease we just created
+      const { createAdminClient } = await import("@/lib/supabase/admin");
+      const admin = createAdminClient();
+      await admin
+        .from("unit")
+        .update({ status: "occupied" })
+        .eq("id", lease.unit_id);
+    } catch (err) {
+      console.error("[createLeaseAction] reservation linkage failed:", err);
+    }
+  }
   await logAudit({
     actor_id: session?.id ?? null,
     entity_type: "lease",
@@ -27,6 +66,8 @@ export async function createLeaseAction(
     after: lease,
   });
   revalidatePath("/property/leases");
+  revalidatePath("/accounting/reservations");
+  revalidatePath("/marketing/forecast");
   redirect("/property/leases/" + lease.id);
 }
 

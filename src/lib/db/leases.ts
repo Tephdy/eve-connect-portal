@@ -17,11 +17,14 @@ export type Lease = {
   deposit_amount: number;
   deposit_1: number | null;
   deposit_2: number | null;
+  deposit_1_due_date: string | null;
+  deposit_2_due_date: string | null;
   ad_ons: unknown;
   ad_ons_amount: number | null;
   notice_period_days: number;
   status: "draft" | "active" | "expiring" | "ended" | "terminated";
   created_at: string;
+  reservation_id: string | null;
   unit_number?: string;
   tenant_name?: string;
   property_id?: string;
@@ -46,7 +49,9 @@ function logWriteError(fn: string, error: any) {
   console.error("[" + fn + "]", JSON.stringify(error, null, 2));
 }
 
-export async function createLease(input: LeaseCreateInput): Promise<Lease> {
+export async function createLease(
+  input: LeaseCreateInput & { reservation_id?: string | null }
+): Promise<Lease> {
   const admin = createAdminClient();
   const { data, error } = await admin
     .schema("core")
@@ -64,10 +69,13 @@ export async function createLease(input: LeaseCreateInput): Promise<Lease> {
       deposit_amount: input.deposit_amount ?? 0,
       deposit_1: input.deposit_1 ?? 0,
       deposit_2: input.deposit_2 ?? 0,
+      deposit_1_due_date: input.deposit_1_due_date || null,
+      deposit_2_due_date: input.deposit_2_due_date || null,
       notice_period_days: input.notice_period_days,
       ad_ons: parseAdOns(typeof input.ad_ons === "string" ? input.ad_ons : ""),
       ad_ons_amount: input.ad_ons_amount ?? 0,
       status: input.status,
+      reservation_id: input.reservation_id ?? null,
     })
     .select(LEASE_WRITE_SELECT)
     .single();
@@ -95,6 +103,8 @@ export async function updateLease(id: string, input: LeaseUpdateInput): Promise<
   if (input.deposit_amount !== undefined) patch.deposit_amount = input.deposit_amount;
   if (input.deposit_1 !== undefined) patch.deposit_1 = input.deposit_1;
   if (input.deposit_2 !== undefined) patch.deposit_2 = input.deposit_2;
+  if (input.deposit_1_due_date !== undefined) patch.deposit_1_due_date = input.deposit_1_due_date || null;
+  if (input.deposit_2_due_date !== undefined) patch.deposit_2_due_date = input.deposit_2_due_date || null;
   if (input.notice_period_days !== undefined) patch.notice_period_days = input.notice_period_days;
   if (input.ad_ons !== undefined) {
     patch.ad_ons = parseAdOns(typeof input.ad_ons === "string" ? input.ad_ons : "");

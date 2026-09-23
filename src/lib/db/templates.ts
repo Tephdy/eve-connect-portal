@@ -8,13 +8,14 @@ export type ContractTemplate = {
   body_markdown: string;
   version: number;
   active: boolean;
+  property_id: string | null;
 };
 
 export async function listTemplates(): Promise<ContractTemplate[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("contract_template")
-    .select("id, name, body_markdown, version, active")
+    .select("id, name, body_markdown, version, active, property_id")
     .order("name", { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []) as ContractTemplate[];
@@ -24,7 +25,7 @@ export async function getTemplate(id: string): Promise<ContractTemplate | null> 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("contract_template")
-    .select("id, name, body_markdown, version, active")
+    .select("id, name, body_markdown, version, active, property_id")
     .eq("id", id)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -39,8 +40,9 @@ export async function createTemplate(input: TemplateCreateInput): Promise<Contra
       name: input.name,
       body_markdown: input.body_markdown,
       active: input.active,
+      property_id: (input as any).property_id || null,
     })
-    .select("id, name, body_markdown, version, active")
+    .select("id, name, body_markdown, version, active, property_id")
     .single();
   if (error) throw new Error(error.message);
   return data as ContractTemplate;
@@ -55,11 +57,12 @@ export async function updateTemplate(
   if (input.name !== undefined) patch.name = input.name;
   if (input.body_markdown !== undefined) patch.body_markdown = input.body_markdown;
   if (input.active !== undefined) patch.active = input.active;
+  if ((input as any).property_id !== undefined) patch.property_id = (input as any).property_id || null;
   const { data, error } = await supabase
     .from("contract_template")
     .update(patch)
     .eq("id", id)
-    .select("id, name, body_markdown, version, active")
+    .select("id, name, body_markdown, version, active, property_id")
     .single();
   if (error) throw new Error(error.message);
   return data as ContractTemplate;

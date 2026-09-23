@@ -8,6 +8,9 @@ export type Inquiry = {
   unit_id: string | null;
   prospect_name: string;
   contact: string | null;
+  email: string | null;
+  messenger_name: string | null;
+  government_id: string | null;
   source: string | null;
   status: "open" | "contacted" | "converted" | "lost";
   created_at: string;
@@ -15,7 +18,7 @@ export type Inquiry = {
 };
 
 const INQUIRY_SELECT =
-  "id, unit_id, prospect_name, contact, source, status, created_at";
+  "id, unit_id, prospect_name, contact, email, messenger_name, government_id, source, status, created_at";
 
 async function enrich(rows: Inquiry[]): Promise<Inquiry[]> {
   if (rows.length === 0) return rows;
@@ -55,6 +58,9 @@ export async function createInquiry(input: InquiryCreateInput): Promise<Inquiry>
       unit_id: input.unit_id || null,
       prospect_name: input.prospect_name,
       contact: input.contact || null,
+      email: input.email || null,
+      messenger_name: input.messenger_name || null,
+      government_id: input.government_id || null,
       source: input.source || null,
       status: input.status,
     })
@@ -70,6 +76,9 @@ export async function updateInquiry(id: string, input: InquiryUpdateInput): Prom
   if (input.unit_id !== undefined) patch.unit_id = input.unit_id || null;
   if (input.prospect_name !== undefined) patch.prospect_name = input.prospect_name;
   if (input.contact !== undefined) patch.contact = input.contact || null;
+  if (input.email !== undefined) patch.email = input.email || null;
+  if (input.messenger_name !== undefined) patch.messenger_name = input.messenger_name || null;
+  if (input.government_id !== undefined) patch.government_id = input.government_id || null;
   if (input.source !== undefined) patch.source = input.source || null;
   if (input.status !== undefined) patch.status = input.status;
   const { data, error } = await admin

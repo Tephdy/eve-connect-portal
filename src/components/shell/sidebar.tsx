@@ -25,6 +25,8 @@ import {
   ShieldCheck,
   ClipboardCheck,
   GitCompareArrows,
+
+  KeyRound,
   Calendar as CalendarIcon,
   ChevronDown,
   type LucideIcon,
@@ -87,6 +89,7 @@ const GROUPS: NavGroup[] = [
       { href: "/accounting/payments",  label: "Payments",  icon: CreditCard, roles: ["accounting", "executive"] },
       { href: "/accounting/deposits",  label: "Deposits",  icon: Wallet, roles: ["accounting", "executive"] },
       { href: "/accounting/approvals", label: "Approvals", icon: CheckSquare, roles: ["accounting", "executive"] },
+      { href: "/accounting/reservations", label: "Reservations", icon: KeyRound, roles: ["accounting", "executive"] },
       { href: "/property/tenants",    label: "Tenants",    icon: Users,     roles: ["accounting", "executive"] },
       { href: "/accounting/spreadsheet", label: "Spreadsheet", icon: BarChart3, roles: ["accounting", "executive"] },
       { href: "/accounting/audit",                label: "Audit",          icon: ClipboardCheck,    roles: ["accounting", "executive"] },

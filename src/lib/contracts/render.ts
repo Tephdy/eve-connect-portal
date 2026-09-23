@@ -18,6 +18,8 @@ export function buildLeaseData(input: {
   monthly_rent: number;
   deposit_amount: number;
   notice_period_days: number;
+  deposit_1?: number;
+  deposit_2?: number;
 }): RenderData {
   const php = new Intl.NumberFormat("en-PH", {
     style: "currency",
@@ -35,6 +37,9 @@ export function buildLeaseData(input: {
     lease_end: input.lease_end,
     monthly_rent: php.format(input.monthly_rent),
     deposit_amount: php.format(input.deposit_amount),
+    deposit_total: php.format(
+      (input.deposit_1 ?? 0) + (input.deposit_2 ?? 0)
+    ),
     notice_period_days: String(input.notice_period_days),
     today: new Date().toLocaleDateString("en-PH", {
       year: "numeric", month: "long", day: "numeric",

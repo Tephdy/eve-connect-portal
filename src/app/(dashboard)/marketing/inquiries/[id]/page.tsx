@@ -17,7 +17,10 @@ export default async function InquiryDetailPage({
   const units = await listUnits();
   return (
     <div>
-      <PageHeader title={inquiry.prospect_name} description={inquiry.contact ?? ""} />
+      <PageHeader
+        title={inquiry.prospect_name}
+        description={[inquiry.contact, inquiry.email].filter(Boolean).join(" · ")}
+      />
       <InquiryForm mode="edit" inquiry={inquiry} units={units} />
     </div>
   );

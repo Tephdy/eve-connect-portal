@@ -12,10 +12,13 @@ import { useToast } from "@/components/ui/toast";
 import {
   overrideForecastAction,
   recalculateAllAction,
+  unreserveUnitAction,
 } from "@/app/(dashboard)/marketing/forecast/actions";
+import { ReserveDialog } from "./reserve-dialog";
 import type { ActionResult } from "@/lib/actions/result";
 import type { Forecast } from "@/lib/db/forecast";
 import type { Unit } from "@/lib/db/units";
+import type { Inquiry } from "@/lib/db/inquiries";
 
 const STATUS_TONE: Record<string, "green" | "brand" | "yellow" | "red" | "gray"> = {
   vacant: "green",
@@ -28,13 +31,16 @@ const STATUS_TONE: Record<string, "green" | "brand" | "yellow" | "red" | "gray">
 export function ForecastTable({
   forecasts,
   units,
+  inquiries,
 }: {
   forecasts: Forecast[];
   units: Unit[];
+  inquiries?: Inquiry[];
 }) {
   const [pending, start] = useTransition();
   const toast = useToast();
   const [editing, setEditing] = useState<string | null>(null);
+  const [reserving, setReserving] = useState<string | null>(null);
 
   const map = new Map(forecasts.map((f) => [f.unit_id, f]));
 
@@ -113,13 +119,39 @@ export function ForecastTable({
                       </StatusPill>
                     </TD>
                     <TD className="text-right">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => setEditing(editing === u.id ? null : u.id)}
-                      >
-                        {editing === u.id ? "Cancel" : "Override"}
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        {u.status === "reserved" ? (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() =>
+                              start(async () => {
+                                const r = await unreserveUnitAction(u.id);
+                                if (r.ok) toast.push("Reservation released", "success");
+                                else toast.push(r.error, "error");
+                              })
+                            }
+                          >
+                            Unreserve
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => setReserving(u.id)}
+                            disabled={u.status !== "vacant"}
+                          >
+                            Reserve
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setEditing(editing === u.id ? null : u.id)}
+                        >
+                          {editing === u.id ? "Cancel" : "Override"}
+                        </Button>
+                      </div>
                     </TD>
                   </TR>
                 );
@@ -128,6 +160,14 @@ export function ForecastTable({
           </Table>
         </CardBody>
       </Card>
+
+      {reserving && (
+        <ReserveDialog
+          unit={units.find((u) => u.id === reserving)!}
+          inquiries={inquiries}
+          onClose={() => setReserving(null)}
+        />
+      )}
 
       {editing && (
         <OverrideForm

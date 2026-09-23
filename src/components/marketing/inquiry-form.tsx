@@ -53,15 +53,33 @@ export function InquiryForm({
         <form action={formAction} className="space-y-4">
           <Input name="prospect_name" label="Prospect name"
             defaultValue={inquiry?.prospect_name ?? ""} error={fieldError("prospect_name")} required />
-          <Input name="contact" label="Contact (email / phone)"
-            defaultValue={inquiry?.contact ?? ""} error={fieldError("contact")} />
+
+          <Input name="contact" label="Phone"
+            defaultValue={inquiry?.contact ?? ""} error={fieldError("contact")}
+            placeholder="e.g., 09171234567" />
+
+          <Input name="email" label="Email" type="email"
+            defaultValue={inquiry?.email ?? ""} error={fieldError("email")}
+            placeholder="name@example.com" />
+
+          <Input name="messenger_name" label="Messenger name"
+            hint="Facebook / Messenger account name"
+            defaultValue={inquiry?.messenger_name ?? ""} error={fieldError("messenger_name")} />
+
+          <Input name="government_id" label="Government ID"
+            hint="Client will send this to our official Facebook page."
+            defaultValue={inquiry?.government_id ?? ""} error={fieldError("government_id")} />
+
           <Select name="unit_id" label="Interested unit (optional)"
             options={unitOptions} placeholder="Any unit"
             defaultValue={inquiry?.unit_id ?? ""} error={fieldError("unit_id")} />
+
           <Input name="source" label="Source" hint="e.g. Facebook, referral, walk-in"
             defaultValue={inquiry?.source ?? ""} error={fieldError("source")} />
+
           <Select name="status" label="Status" options={STATUSES}
             defaultValue={inquiry?.status ?? "open"} error={fieldError("status")} />
+
           <div className="flex items-center gap-3 pt-2">
             <SubmitButton label={mode === "create" ? "Create Inquiry" : "Save Changes"} />
             <Button type="button" variant="secondary" onClick={() => router.push("/marketing/inquiries")}>

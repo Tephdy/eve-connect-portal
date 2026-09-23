@@ -52,6 +52,8 @@ export async function generateContractAction(
     lease_end: lease.end_date,
     monthly_rent: lease.monthly_rent,
     deposit_amount: lease.deposit_amount,
+    deposit_1: lease.deposit_1 ?? 0,
+    deposit_2: lease.deposit_2 ?? 0,
     notice_period_days: lease.notice_period_days,
   });
 

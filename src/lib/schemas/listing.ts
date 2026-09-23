@@ -16,6 +16,9 @@ export const inquiryCreateSchema = z.object({
   unit_id: z.string().uuid().optional().or(z.literal("")),
   prospect_name: z.string().min(1, "Name is required").max(200),
   contact: z.string().max(200).optional().or(z.literal("")),
+    email: z.string().email().optional().or(z.literal("")),
+    messenger_name: z.string().max(200).optional().or(z.literal("")),
+    government_id: z.string().max(100).optional().or(z.literal("")),
   source: z.string().max(100).optional().or(z.literal("")),
   status: z.enum(["open","contacted","converted","lost"]).default("open"),
 });
