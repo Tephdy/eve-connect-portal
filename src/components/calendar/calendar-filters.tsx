@@ -16,13 +16,17 @@ export function CalendarFilters({
   onPropertyChange,
   selectedTypes,
   onTypesChange,
+  allowedTypes,
 }: {
   properties: { id: string; name: string }[];
   selectedProperty: string | null;
   onPropertyChange: (id: string | null) => void;
   selectedTypes: CalendarEventType[];
   onTypesChange: (types: CalendarEventType[]) => void;
+  allowedTypes?: CalendarEventType[];
 }) {
+  const types = allowedTypes ?? ALL_TYPES;
+
   function toggleType(t: CalendarEventType) {
     const set = new Set(selectedTypes);
     if (set.has(t)) set.delete(t);
@@ -66,7 +70,7 @@ export function CalendarFilters({
         >
           All
         </button>
-        {ALL_TYPES.map((t) => {
+        {types.map((t) => {
           const active = selectedTypes.includes(t);
           return (
             <button

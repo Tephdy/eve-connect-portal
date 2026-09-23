@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
@@ -43,12 +43,15 @@ export function CalendarShell({
   expiringCount,
   expiringDays,
   expiringHref,
+  allowedTypes,
 }: {
   initial: CalendarMonth;
   properties: { id: string; name: string }[];
   expiringCount: number;
   expiringDays: number;
   expiringHref: string;
+  /** Optional: restrict which event types are visible and fetchable. */
+  allowedTypes?: CalendarEventType[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -75,9 +78,26 @@ export function CalendarShell({
 
   const selectedProperty = searchParams.get("property");
   const typesParam = searchParams.get("types") ?? "";
-  const selectedTypes: CalendarEventType[] = typesParam
-    ? (typesParam.split(",").filter((t) => ALL_TYPES.includes(t as CalendarEventType)) as CalendarEventType[])
-    : [];
+  const selectedTypes: CalendarEventType[] = (() => {
+    const fromUrl = typesParam
+      ? typesParam
+          .split(",")
+          .filter((t): t is CalendarEventType =>
+            ALL_TYPES.includes(t as CalendarEventType)
+          )
+      : [];
+    if (allowedTypes && allowedTypes.length > 0) {
+      // Constrain to allowedTypes. If URL has no selection, treat it as
+      // "all allowed types".
+      if (fromUrl.length === 0) return allowedTypes;
+      const filtered = fromUrl.filter((t) => allowedTypes.includes(t));
+      return filtered.length > 0 ? filtered : allowedTypes;
+    }
+    return fromUrl;
+  })();
+
+  const effectiveTypes: CalendarEventType[] =
+    allowedTypes && allowedTypes.length > 0 ? allowedTypes : ALL_TYPES;
 
   function updateQuery(next: {
     property?: string | null;
@@ -105,6 +125,8 @@ export function CalendarShell({
     params.set("month", String(month.month));
     if (selectedProperty) params.set("property", selectedProperty);
     if (selectedTypes.length > 0) params.set("types", selectedTypes.join(","));
+    else if (allowedTypes && allowedTypes.length > 0)
+      params.set("types", allowedTypes.join(","));
 
     fetch("/api/calendar/month?" + params.toString(), { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
@@ -127,6 +149,8 @@ export function CalendarShell({
     params.set("month", String(m));
     if (selectedProperty) params.set("property", selectedProperty);
     if (selectedTypes.length > 0) params.set("types", selectedTypes.join(","));
+    else if (allowedTypes && allowedTypes.length > 0)
+      params.set("types", allowedTypes.join(","));
 
     const res = await fetch("/api/calendar/month?" + params.toString(), {
       cache: "no-store",
@@ -210,6 +234,7 @@ export function CalendarShell({
       <ExpiringBanner count={expiringCount} days={expiringDays} href={expiringHref} />
 
       <CalendarFilters
+        allowedTypes={effectiveTypes}
         properties={properties}
         selectedProperty={selectedProperty}
         onPropertyChange={(id) => updateQuery({ property: id })}
@@ -292,7 +317,7 @@ export function CalendarShell({
         </div>
       </div>
 
-      <Legend />
+      <Legend allowedTypes={effectiveTypes}  />
 
       {view === "month" && (
         <MonthGrid
