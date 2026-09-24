@@ -45,6 +45,7 @@ export function InquiryTable({ inquiries }: { inquiries: Inquiry[] }) {
                   </Link>
                 </TD>
                 <TD className="text-sm text-ink-600">{i.contact ?? "—"}</TD>
+                <TD className="text-sm text-ink-600">{i.messenger_name ?? "—"}</TD>
                 <TD className="text-sm text-ink-600">{i.unit_number ?? "—"}</TD>
                 <TD className="text-sm text-ink-600">{i.source ?? "—"}</TD>
                 <TD>

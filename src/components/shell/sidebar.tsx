@@ -24,6 +24,7 @@ import {
   BarChart3,
   ShieldCheck,
   ClipboardCheck,
+  Upload,
   GitCompareArrows,
 
   KeyRound,
@@ -66,6 +67,8 @@ const GROUPS: NavGroup[] = [
       { href: "/property/calendar",   label: "Calendar",   icon: CalendarIcon, roles: ["property_rep", "executive"] },
       { href: "/property/contracts",  label: "Contracts",  icon: FileSignature, roles: ["property_rep", "executive"] },
       { href: "/property/templates",  label: "Templates",  icon: ScrollText, roles: ["property_rep", "executive"] },
+      { href: "/property/receipts",     label: "Receipts",       icon: Upload, roles: ["property_rep", "executive"] },
+      { href: "/property/receipts/new", label: "Upload Receipt", icon: Upload, roles: ["property_rep"] },
     ],
   },
   {
@@ -90,6 +93,7 @@ const GROUPS: NavGroup[] = [
       { href: "/accounting/deposits",  label: "Deposits",  icon: Wallet, roles: ["accounting", "executive"] },
       { href: "/accounting/approvals", label: "Approvals", icon: CheckSquare, roles: ["accounting", "executive"] },
       { href: "/accounting/reservations", label: "Reservations", icon: KeyRound, roles: ["accounting", "executive"] },
+      { href: "/accounting/receipts", label: "Receipts", icon: Upload, roles: ["accounting", "executive"] },
       { href: "/property/tenants",    label: "Tenants",    icon: Users,     roles: ["accounting", "executive"] },
       { href: "/accounting/spreadsheet", label: "Spreadsheet", icon: BarChart3, roles: ["accounting", "executive"] },
       { href: "/accounting/audit",                label: "Audit",          icon: ClipboardCheck,    roles: ["accounting", "executive"] },
