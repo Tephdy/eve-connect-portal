@@ -6,6 +6,7 @@ import { assertPermission } from "@/lib/auth/guard";
 import { getSession } from "@/lib/auth/get-session";
 import { createInvoice, markInvoicePaid, voidInvoice, getInvoice } from "@/lib/db/invoices";
 import { recordPayment } from "@/lib/db/payments";
+import { upsertDepositFromPayment } from "@/lib/db/deposits";
 import { getLease } from "@/lib/db/leases";
 import { getTenant } from "@/lib/db/tenants";
 import { getUnit } from "@/lib/db/units";
@@ -58,6 +59,21 @@ export async function recordPaymentAction(
   // Mark invoice paid (V1: single payment per invoice)
   await markInvoicePaid(payment.invoice_id);
 
+  // If this invoice is a deposit, upsert the lease's deposit record.
+  try {
+    const invoice = await getInvoice(payment.invoice_id);
+    if (invoice && invoice.type === "deposit" && invoice.lease_id) {
+      await upsertDepositFromPayment({
+        lease_id: invoice.lease_id,
+        invoice_id: invoice.id,
+        invoice_amount: Number(invoice.amount ?? 0),
+        payment_amount: Number(payment.amount ?? 0),
+      });
+    }
+  } catch (err) {
+    console.error("[recordPaymentAction] deposit upsert failed:", err);
+  }
+
   await logAudit({
     actor_id: session?.id ?? null,
     entity_type: "payment",
@@ -77,6 +93,8 @@ export async function recordPaymentAction(
 
   revalidatePath("/accounting/invoices/" + payment.invoice_id);
   revalidatePath("/accounting/payments");
+  revalidatePath("/accounting/deposits");
+  revalidatePath("/property/leases/" + (payment.invoice_id ? "" : ""));
   return { ok: true, data: undefined };
 }
 
@@ -111,7 +129,7 @@ async function sendReceiptEmail(payment: {
     const invoice = await getInvoice(payment.invoice_id);
     if (!invoice) return;
 
-    const lease = await getLease(invoice.lease_id);
+    const lease = invoice.lease_id ? await getLease(invoice.lease_id) : null;
     if (!lease) return;
 
     const [tenant, unit] = await Promise.all([

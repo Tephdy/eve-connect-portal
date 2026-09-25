@@ -34,7 +34,7 @@ export function MonthReport({
     invoice_due: 0,
     lease_starting: 0,
     lease_ending: 0,
-    payment: 0,
+    notice_due: 0,payment: 0,
   };
   let totalDue = 0;
   let totalPaid = 0;

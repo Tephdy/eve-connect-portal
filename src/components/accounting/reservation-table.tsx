@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { KeyRound, X } from "lucide-react";
+import { KeyRound, X, Copy } from "lucide-react";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Card, CardBody } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,13 @@ function shortDate(iso: string | null): string {
   });
 }
 
-export function ReservationTable({ rows }: { rows: ReservationRow[] }) {
+export function ReservationTable({
+  rows,
+  readOnly = false,
+}: {
+  rows: ReservationRow[];
+  readOnly?: boolean;
+}) {
   const [pending, start] = useTransition();
   const [releasing, setReleasing] = useState<string | null>(null);
   const [reason, setReason] = useState("");
@@ -97,7 +103,24 @@ export function ReservationTable({ rows }: { rows: ReservationRow[] }) {
                       {r.payment_mode ?? "\u2014"}
                     </TD>
                     <TD className="text-xs text-ink-500">
-                      {r.reference_number ?? "\u2014"}
+                      {r.reference_number ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(r.reference_number ?? "");
+                            toast.push("Reference copied", "success");
+                          }}
+                          title="Click to copy"
+                          className="group -mx-1 inline-flex items-center gap-1 rounded px-1 font-mono transition-colors hover:bg-brand-500/10 hover:text-brand-700 dark:hover:text-brand-400"
+                        >
+                          <span className="underline decoration-dotted underline-offset-2">
+                            {r.reference_number}
+                          </span>
+                          <Copy className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-60" />
+                        </button>
+                      ) : (
+                        "\u2014"
+                      )}
                     </TD>
                     <TD className="text-xs text-ink-500">
                       {shortDate(r.reserved_at)}
@@ -124,7 +147,7 @@ export function ReservationTable({ rows }: { rows: ReservationRow[] }) {
                       )}
                     </TD>
                     <TD className="text-right">
-                      {active && (
+                      {active && !readOnly && (
                         <Button
                           size="sm"
                           variant="secondary"

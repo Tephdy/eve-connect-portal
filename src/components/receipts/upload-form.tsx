@@ -19,6 +19,7 @@ const PAYMENT_TYPES = [
   { value: "deposits", label: "Deposits" },
   { value: "overdue", label: "Overdue" },
   { value: "add-ons", label: "Add-ons" },
+  { value: "reservation-fee", label: "Reservation fee" },
   { value: "all", label: "All" },
   { value: "others", label: "Others" },
 ];
@@ -33,7 +34,15 @@ function SubmitButton() {
   );
 }
 
-export function ReceiptUploadForm({ tenants }: { tenants: Tenant[] }) {
+export function ReceiptUploadForm({
+  tenants,
+  reservations,
+  mode = "full",
+}: {
+  tenants: Tenant[];
+  reservations?: { id: string; client_name: string; unit_number?: string; property_name?: string }[];
+  mode?: "full" | "marketing";
+}) {
   const router = useRouter();
   const toast = useToast();
   const [state, formAction] = useActionState<ActionResult<UploadResult> | null, FormData>(
@@ -41,7 +50,9 @@ export function ReceiptUploadForm({ tenants }: { tenants: Tenant[] }) {
     null
   );
 
-  const [paymentFor, setPaymentFor] = useState<string[]>(["rent"]);
+  const [paymentFor, setPaymentFor] = useState<string[]>(
+    mode === "marketing" ? ["reservation-fee"] : ["rent"]
+  );
   const [customLabel, setCustomLabel] = useState("");
   const [fileNames, setFileNames] = useState<string[]>([]);
 
@@ -74,20 +85,54 @@ export function ReceiptUploadForm({ tenants }: { tenants: Tenant[] }) {
     label: t.full_name + (t.phone ? " - " + t.phone : ""),
   }));
 
+  const visiblePaymentTypes =
+    mode === "marketing"
+      ? PAYMENT_TYPES.filter(
+          (p) => p.value === "reservation-fee" || p.value === "others"
+        )
+      : PAYMENT_TYPES;
+
   const needsCustomLabel = paymentFor.includes("others");
 
   return (
     <Card className="max-w-3xl">
       <CardBody>
         <form action={formAction} className="space-y-5">
-          <Select
-            name="tenant_id"
-            label="Tenant"
-            options={tenantOptions}
-            placeholder="Select a tenant"
-            error={state && !state.ok ? state.fieldErrors?.tenant_id : undefined}
-            required
-          />
+          <div>
+            <label className="mb-1 block text-sm font-medium text-ink-700">
+              Tenant <span className="text-red-600">*</span>
+            </label>
+            <select
+              name="tenant_id"
+              required
+              className="w-full rounded-lg border border-white/60 bg-white/70 px-3 py-2 text-sm dark:border-white/[0.08] dark:bg-white/[0.04]"
+            >
+              <option value="">— Select a tenant or reservation —</option>
+              {tenants.length > 0 && (
+                <optgroup label="Tenants">
+                  {tenants.map((t) => (
+                    <option key={t.id} value={"tenant:" + t.id}>
+                      {t.full_name}{t.phone ? " · " + t.phone : ""}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              {reservations && reservations.length > 0 && (
+                <optgroup label="From reservations">
+                  {reservations.map((r) => (
+                    <option key={r.id} value={"reservation:" + r.id}>
+                      {r.client_name}
+                      {r.unit_number ? " · Unit " + r.unit_number : ""}
+                      {r.property_name ? " · " + r.property_name : ""}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+            {state && !state.ok && state.fieldErrors?.tenant_id && (
+              <p className="mt-1 text-xs text-red-600">{state.fieldErrors.tenant_id}</p>
+            )}
+          </div>
 
           <Input
             name="payment_month"
@@ -102,7 +147,7 @@ export function ReceiptUploadForm({ tenants }: { tenants: Tenant[] }) {
               Payment for
             </label>
             <div className="flex flex-wrap gap-2">
-              {PAYMENT_TYPES.map((p) => {
+              {visiblePaymentTypes.map((p) => {
                 const active = paymentFor.includes(p.value);
                 return (
                   <button
@@ -136,6 +181,22 @@ export function ReceiptUploadForm({ tenants }: { tenants: Tenant[] }) {
               </div>
             )}
           </div>
+
+          <Input
+
+
+            name="reference_no"
+
+
+            label="Reference number (optional)"
+
+
+            placeholder="GCash ref / bank ref / OR number"
+
+
+          />
+
+
 
           <div>
             <label className="mb-2 block text-sm font-medium text-ink-700">

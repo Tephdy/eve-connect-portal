@@ -5,6 +5,10 @@ import { assertPermission } from "@/lib/auth/guard";
 import { getSession } from "@/lib/auth/get-session";
 import { upsertForecast, recalculateForecasts } from "@/lib/db/forecast";
 import { createReservation, releaseReservation } from "@/lib/db/unit-reservations";
+import { createInvoice } from "@/lib/db/invoices";
+import { createReceipt } from "@/lib/db/receipts";
+import { uploadToDrive, validateFiles } from "@/lib/receipts/drive-upload";
+import { createClient } from "@/lib/supabase/server";
 import { logAudit } from "@/lib/audit/log";
 import { emit } from "@/lib/events/emit";
 import { forecastOverrideSchema } from "@/lib/schemas/listing";
@@ -141,6 +145,94 @@ export async function reserveUnitAction(
       notice_period_days,
       lease_status,
     });
+
+    // Auto-create the reservation-fee invoice
+    const feeAmount = Number(reservation_fee ?? 0);
+    if (feeAmount > 0) {
+      try {
+        await createInvoice({
+          lease_id: null,
+          type: "reservation_fee",
+          amount: feeAmount,
+          due_date: new Date().toISOString().slice(0, 10),
+          status: "unpaid",
+          reservation_id: res.id,
+          tenant_id: (res as any).tenant_id ?? null,
+        });
+      } catch (err) {
+        console.error("[reserveUnitAction] failed to create invoice:", err);
+      }
+    }
+
+    // Optional: upload a receipt to Google Drive
+    console.log("[reserveUnitAction] receipt files arrived:", formData.getAll("receipt_files").length);
+    const receiptFiles = formData.getAll("receipt_files").filter(
+      (f): f is File => f instanceof File
+    );
+    if (receiptFiles.length > 0) {
+      console.log("[reserveUnitAction] entering upload block");
+      try {
+        const fileErr = validateFiles(receiptFiles);
+        if (fileErr) {
+          console.warn("[reserveUnitAction] receipt validation:", fileErr);
+        } else {
+          // Build the folder name from the unit's property
+          const sb = await createClient();
+          const { data: unitRow } = await sb
+            .from("unit")
+            .select("unit_number, property_id")
+            .eq("id", unit_id)
+            .maybeSingle();
+
+          let propertyName = "Property";
+          const propertyId = (unitRow as any)?.property_id ?? null;
+          if (propertyId) {
+            const { data: prop } = await sb
+              .from("property")
+              .select("name")
+              .eq("id", propertyId)
+              .maybeSingle();
+            propertyName = (prop as any)?.name ?? "Property";
+          }
+
+          const unitNumber = (unitRow as any)?.unit_number ?? "Unit";
+          const folderName = [propertyName, unitNumber, client_name]
+            .join("-")
+            .replace(/[/\\?%*:|"<>]/g, "");
+
+          const nowDate = new Date();
+          const monthFolder = nowDate.toLocaleDateString("en-PH", {
+            month: "long",
+            year: "numeric",
+          });
+
+          const drive = await uploadToDrive({
+            folderName,
+            monthFolder,
+            files: receiptFiles,
+            tagPrefix: "reservation-fee",
+          });
+
+          await createReceipt({
+            tenant_id: null,
+            property_id: propertyId,
+            unit_id: unit_id,
+            payment_for: ["reservation-fee"],
+            custom_label: null,
+            reservation_id: res.id,
+            drive_folder_id: drive.folderId,
+            drive_folder_url: drive.folderUrl,
+            drive_file_ids: drive.files,
+            uploaded_by: session?.id ?? null,
+            notes: null,
+            payment_month: drive.monthFolder,
+          });
+        }
+      } catch (err) {
+        // Fail-soft: reservation + invoice already succeeded
+        console.error("[reserveUnitAction] receipt upload failed:", err);
+      }
+    }
 
     await logAudit({
       actor_id: session?.id ?? null,

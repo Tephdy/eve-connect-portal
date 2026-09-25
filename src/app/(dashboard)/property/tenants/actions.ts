@@ -44,6 +44,40 @@ export async function createTenantAction(
     inquiry_id: inquiryId,
   });
 
+  // Backfill tenant_id on any invoices linked to this tenant's reservation
+  if (fromReservationId) {
+    try {
+      const { createAdminClient } = await import("@/lib/supabase/admin");
+      const admin = createAdminClient();
+
+      // Update invoices
+      const { data: linkedInvoices } = await admin
+        .schema("acct")
+        .from("invoice")
+        .select("id")
+        .eq("reservation_id", fromReservationId);
+
+      if (linkedInvoices && linkedInvoices.length > 0) {
+        const invoiceIds = linkedInvoices.map((i: any) => i.id);
+
+        await admin
+          .schema("acct")
+          .from("invoice")
+          .update({ tenant_id: tenant.id })
+          .in("id", invoiceIds);
+
+        // Also stamp the payments on those invoices
+        await admin
+          .schema("acct")
+          .from("payment")
+          .update({ tenant_id: tenant.id })
+          .in("invoice_id", invoiceIds);
+      }
+    } catch (err) {
+      console.error("[createTenantAction] backfill failed:", err);
+    }
+  }
+
   await logAudit({
     actor_id: session?.id ?? null,
     entity_type: "tenant",

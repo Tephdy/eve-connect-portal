@@ -93,13 +93,28 @@ export function ForecastTable({
                     <TD className="text-ink-600">{u.property_name ?? "—"}</TD>
                     <TD>
                       {f ? (
-                        <span className="text-sm text-ink-800">
-                          {new Date(f.earliest_available_date).toLocaleDateString("en-PH", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </span>
+                        (() => {
+                          const d = new Date(f.earliest_available_date);
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0);
+                          if (d.getTime() <= today.getTime()) {
+                            return (
+                              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                Available now
+                              </span>
+                            );
+                          }
+                          return (
+                            <span className="text-sm text-ink-800">
+                              {d.toLocaleDateString("en-PH", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                            </span>
+                          );
+                        })()
                       ) : (
                         <span className="text-sm text-ink-400">—</span>
                       )}

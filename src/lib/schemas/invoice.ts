@@ -1,10 +1,18 @@
 import { z } from "zod";
 
-export const invoiceTypes = ["rent","deposit","penalty","other"] as const;
+export const invoiceTypes = [
+  "rent",
+  "utility",
+  "deposit",
+  "penalty",
+  "add-ons",
+  "reservation_fee",
+  "other",
+] as const;
 export const invoiceStatuses = ["unpaid","paid","overdue","void"] as const;
 
 export const invoiceCreateSchema = z.object({
-  lease_id: z.string().uuid("Lease is required"),
+  lease_id: z.string().uuid().nullable().optional(),
   type: z.enum(invoiceTypes).default("rent"),
   amount: z.coerce.number().min(0.01, "Amount must be greater than 0"),
   due_date: z.string().min(1, "Due date is required"),

@@ -68,6 +68,7 @@ export default async function PaymentsPage() {
                 <TR>
                   <TH>Receipt</TH>
                   <TH>Invoice</TH>
+                  <TH>Payment for</TH>
                   <TH>Tenant</TH>
                   <TH>Method</TH>
                   <TH>Paid at</TH>
@@ -89,6 +90,17 @@ export default async function PaymentsPage() {
                       </div>
                     </TD>
                     <TD className="text-ink-600">{p.invoice_display ?? "—"}</TD>
+                    <TD className="capitalize text-ink-600">{
+                      ({
+                        rent: "Rent",
+                        utility: "Utility",
+                        deposit: "Deposit",
+                        penalty: "Penalty",
+                        "add-ons": "Add-ons",
+                        reservation_fee: "Reservation fee",
+                        other: "Other",
+                      } as Record<string, string>)[p.invoice_type ?? ""] ?? (p.invoice_type ?? "—")
+                    }</TD>
                     <TD className="text-ink-600">{p.tenant_name ?? "—"}</TD>
                     <TD>
                       <span className="inline-flex items-center gap-1.5 text-sm text-ink-600">

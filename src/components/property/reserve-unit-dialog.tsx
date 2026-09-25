@@ -54,27 +54,33 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function ReserveDialog({
-  unit,
+export function ReserveUnitDialog({
+  units,
   inquiries,
   onClose,
 }: {
-  unit: Unit;
+  units: Unit[];
   inquiries?: Inquiry[];
   onClose: () => void;
 }) {
   const [pending, start] = useTransition();
   const toast = useToast();
 
+  // Unit picker state
+  const [unitId, setUnitId] = useState("");
+
+  // Client
   const [inquiryId, setInquiryId] = useState("");
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [clientEmail, setClientEmail] = useState("");
 
+  // Reservation
   const [fee, setFee] = useState("");
   const [mode, setMode] = useState("");
   const [reference, setReference] = useState("");
 
+  // Lease draft
   const [intent, setIntent] = useState("");
   const [term, setTerm] = useState("");
   const [leaseStart, setLeaseStart] = useState("");
@@ -115,12 +121,11 @@ export function ReserveDialog({
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!clientName) {
-      toast.push("Client name is required", "error");
-      return;
-    }
+    if (!unitId) { toast.push("Pick a unit first", "error"); return; }
+    if (!clientName) { toast.push("Client name is required", "error"); return; }
+
     const fd = new FormData();
-    fd.set("unit_id", unit.id);
+    fd.set("unit_id", unitId);
     fd.set("client_name", clientName);
     fd.set("client_phone", clientPhone);
     fd.set("client_email", clientEmail);
@@ -155,13 +160,18 @@ export function ReserveDialog({
 
     start(async () => {
       const r = await reserveUnitAction(null, fd);
-      if (!r.ok) {
-        toast.push(r.error, "error");
-        return;
-      }
+      if (!r.ok) { toast.push(r.error, "error"); return; }
       toast.push("Unit reserved", "success");
       onClose();
     });
+  }
+
+  // Group units by property
+  const byProperty = new Map<string, Unit[]>();
+  for (const u of units) {
+    const key = u.property_name ?? "Unassigned";
+    if (!byProperty.has(key)) byProperty.set(key, []);
+    byProperty.get(key)!.push(u);
   }
 
   return (
@@ -174,7 +184,7 @@ export function ReserveDialog({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Reserve Unit {unit.unit_number}</h2>
+          <h2 className="text-lg font-semibold">Reserve a unit</h2>
           <button
             onClick={onClose}
             className="rounded p-1 text-ink-400 hover:text-ink-700"
@@ -184,6 +194,36 @@ export function ReserveDialog({
         </div>
 
         <form onSubmit={submit} className="space-y-3">
+          <SectionTitle>Unit</SectionTitle>
+
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-ink-500">
+              Unit (grouped by property)
+            </label>
+            <select
+              value={unitId}
+              onChange={(e) => setUnitId(e.target.value)}
+              className="w-full rounded-lg border border-white/60 bg-white/70 px-3 py-1.5 text-sm dark:border-white/[0.08] dark:bg-white/[0.04]"
+              required
+            >
+              <option value="">— Select a unit —</option>
+              {Array.from(byProperty.entries()).map(([propName, propUnits]) => (
+                <optgroup key={propName} label={propName}>
+                  {propUnits.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.unit_number}
+                      {u.status === "occupied" ? " (Occupied)" : ""}
+                      {u.status === "maintenance" ? " (Maintenance)" : ""}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-ink-500">
+              Occupied units can be reserved in advance for the next tenant.
+            </p>
+          </div>
+
           <SectionTitle>Client</SectionTitle>
 
           {inquiries && inquiries.length > 0 && (
@@ -303,33 +343,13 @@ export function ReserveDialog({
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Lease start date"
-              type="date"
-              value={leaseStart}
-              onChange={(e) => setLeaseStart(e.target.value)}
-            />
-            <Input
-              label="Lease end date"
-              type="date"
-              value={leaseEnd}
-              onChange={(e) => setLeaseEnd(e.target.value)}
-            />
+            <Input label="Lease start date" type="date" value={leaseStart} onChange={(e) => setLeaseStart(e.target.value)} />
+            <Input label="Lease end date" type="date" value={leaseEnd} onChange={(e) => setLeaseEnd(e.target.value)} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Move-in date"
-              type="date"
-              value={moveIn}
-              onChange={(e) => setMoveIn(e.target.value)}
-            />
-            <Input
-              label="Rent due date"
-              type="date"
-              value={rentDue}
-              onChange={(e) => setRentDue(e.target.value)}
-            />
+            <Input label="Move-in date" type="date" value={moveIn} onChange={(e) => setMoveIn(e.target.value)} />
+            <Input label="Rent due date" type="date" value={rentDue} onChange={(e) => setRentDue(e.target.value)} />
           </div>
 
           <Input
@@ -343,39 +363,13 @@ export function ReserveDialog({
           />
 
           <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="1st deposit"
-              type="number"
-              step="0.01"
-              min="0"
-              value={dep1}
-              onChange={(e) => setDep1(e.target.value)}
-              placeholder="0.00"
-            />
-            <Input
-              label="1st deposit due date"
-              type="date"
-              value={dep1Due}
-              onChange={(e) => setDep1Due(e.target.value)}
-            />
+            <Input label="1st deposit" type="number" step="0.01" min="0" value={dep1} onChange={(e) => setDep1(e.target.value)} placeholder="0.00" />
+            <Input label="1st deposit due date" type="date" value={dep1Due} onChange={(e) => setDep1Due(e.target.value)} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="2nd deposit"
-              type="number"
-              step="0.01"
-              min="0"
-              value={dep2}
-              onChange={(e) => setDep2(e.target.value)}
-              placeholder="0.00"
-            />
-            <Input
-              label="2nd deposit due date"
-              type="date"
-              value={dep2Due}
-              onChange={(e) => setDep2Due(e.target.value)}
-            />
+            <Input label="2nd deposit" type="number" step="0.01" min="0" value={dep2} onChange={(e) => setDep2(e.target.value)} placeholder="0.00" />
+            <Input label="2nd deposit due date" type="date" value={dep2Due} onChange={(e) => setDep2Due(e.target.value)} />
           </div>
 
           <div>
@@ -391,9 +385,7 @@ export function ReserveDialog({
               </button>
             </div>
             {addOns.length === 0 ? (
-              <p className="text-xs text-ink-400">
-                No add-ons. Click "Add" to include parking, utilities, etc.
-              </p>
+              <p className="text-xs text-ink-400">No add-ons.</p>
             ) : (
               <div className="space-y-2">
                 {addOns.map((a, i) => (
@@ -403,7 +395,7 @@ export function ReserveDialog({
                         type="text"
                         value={a.label}
                         onChange={(e) => updateAddOn(i, { label: e.target.value })}
-                        placeholder="Label (e.g., Parking)"
+                        placeholder="Label"
                         className="w-full rounded-lg border border-white/60 bg-white/70 px-3 py-1.5 text-sm dark:border-white/[0.08] dark:bg-white/[0.04]"
                       />
                     </div>
@@ -422,47 +414,26 @@ export function ReserveDialog({
                       type="button"
                       onClick={() => removeAddOn(i)}
                       className="rounded-lg p-2 text-ink-400 hover:bg-danger-500/10 hover:text-danger-600"
-                      aria-label="Remove add-on"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 ))}
                 <p className="text-right text-xs font-semibold text-ink-600">
-                  Add-ons total: ₱
-                  {addOnsTotal.toLocaleString("en-PH", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  Add-ons total: ₱{addOnsTotal.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
               </div>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Notice period (days)"
-              type="number"
-              min="0"
-              value={notice}
-              onChange={(e) => setNotice(e.target.value)}
-              placeholder="e.g., 30"
-            />
-            <Select
-              label="Lease status"
-              value={leaseStatus}
-              onChange={(e) => setLeaseStatus(e.target.value)}
-              options={LEASE_STATUSES}
-            />
+            <Input label="Notice period (days)" type="number" min="0" value={notice} onChange={(e) => setNotice(e.target.value)} placeholder="e.g., 30" />
+            <Select label="Lease status" value={leaseStatus} onChange={(e) => setLeaseStatus(e.target.value)} options={LEASE_STATUSES} />
           </div>
 
           <div className="flex justify-end gap-2 pt-3">
-            <Button type="button" variant="secondary" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" loading={pending} disabled={!clientName}>
-              Reserve unit
-            </Button>
+            <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
+            <Button type="submit" loading={pending} disabled={!unitId || !clientName}>Reserve unit</Button>
           </div>
         </form>
       </div>

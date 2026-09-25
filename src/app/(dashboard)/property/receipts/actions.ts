@@ -29,15 +29,22 @@ export async function uploadReceiptAction(
   }
 
   const session = await getSession();
-  const tenantId = String(formData.get("tenant_id") ?? "").trim() || null;
+  const ownerRaw = String(formData.get("tenant_id") ?? "").trim();
+  const [ownerKind, ownerUuid] = ownerRaw.split(":");
+  const kind = ownerKind === "reservation" ? "reservation" : "tenant";
+  const tenantId = kind === "tenant" ? (ownerUuid || null) : null;
+  const reservationId = kind === "reservation" ? (ownerUuid || null) : null;
   const paymentForList = formData.getAll("payment_for").map((v) => String(v));
   const customLabel = String(formData.get("custom_label") ?? "").trim() || null;
-  const reservationId = String(formData.get("reservation_id") ?? "").trim() || null;
+  // (removed duplicate declaration — reservationId is derived below from the tenant picker)
   const notes = String(formData.get("notes") ?? "").trim() || null;
+  const reference_no = String(formData.get("reference_no") ?? "").trim() || null;
   const paymentMonthRaw = String(formData.get("payment_month") ?? "").trim();
   const files = formData.getAll("files").filter((f): f is File => f instanceof File);
 
-  if (!tenantId) return { ok: false, error: "Select a tenant" };
+  if (!tenantId && !reservationId) {
+    return { ok: false, error: "Select a tenant or reservation" };
+  }
   if (!/^\d{4}-\d{2}$/.test(paymentMonthRaw)) {
     return { ok: false, error: "Pick a valid month" };
   }
@@ -54,22 +61,44 @@ export async function uploadReceiptAction(
   }
 
   const supabase = await createClient();
-  const { data: tenant } = await supabase
-    .from("tenant")
-    .select("id, full_name")
-    .eq("id", tenantId)
-    .maybeSingle();
-  if (!tenant) return { ok: false, error: "Tenant not found" };
 
-  const { data: leases } = await supabase
-    .from("lease")
-    .select("unit_id, status, created_at")
-    .eq("tenant_id", tenantId)
-    .order("created_at", { ascending: false })
-    .limit(1);
+  // Resolve the payer: either an existing tenant or an open reservation.
+  let tenantFullName = "";
+  let tenantLookupId: string | null = tenantId;
+  let reservationUnitId: string | null = null;
 
-  const lease = leases?.[0];
-  let unitId: string | null = lease?.unit_id ?? null;
+  if (kind === "reservation" && reservationId) {
+    const { data: res } = await supabase
+      .schema("acct")
+      .from("unit_reservation")
+      .select("client_name, unit_id")
+      .eq("id", reservationId)
+      .maybeSingle();
+    if (!res) return { ok: false, error: "Reservation not found" };
+    tenantFullName = (res as any).client_name ?? "";
+    reservationUnitId = (res as any).unit_id ?? null;
+  } else if (tenantId) {
+    const { data: tenant } = await supabase
+      .from("tenant")
+      .select("id, full_name")
+      .eq("id", tenantId)
+      .maybeSingle();
+    if (!tenant) return { ok: false, error: "Tenant not found" };
+    tenantFullName = tenant.full_name;
+  }
+
+  let unitId: string | null = reservationUnitId;
+
+  if (kind === "tenant" && tenantId) {
+    const { data: leases } = await supabase
+      .from("lease")
+      .select("unit_id, status, created_at")
+      .eq("tenant_id", tenantId)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const lease = leases?.[0];
+    if (!unitId) unitId = lease?.unit_id ?? null;
+  }
   let propertyId: string | null = null;
   let unitNumber = "Unit";
   let propertyName = "Property";
@@ -94,7 +123,7 @@ export async function uploadReceiptAction(
     }
   }
 
-  const folderName = [propertyName, unitNumber, tenant.full_name]
+  const folderName = [propertyName, unitNumber, tenantFullName]
     .join("-")
     .replace(/[/\\?%*:|"<>]/g, "");
 
@@ -162,6 +191,7 @@ export async function uploadReceiptAction(
       uploaded_by: session?.id ?? null,
       notes,
       payment_month: monthFolder,
+      reference_no,
     });
 
     await logAudit({

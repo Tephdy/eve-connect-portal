@@ -4,7 +4,7 @@ import { listReservations } from "@/lib/db/unit-reservations";
 import { PageHeader } from "@/components/layout/page-header";
 import { ReceiptUploadForm } from "@/components/receipts/upload-form";
 
-export default async function NewReceiptPage() {
+export default async function MarketingNewReceiptPage() {
   await requirePagePermission("payment:read");
   const [tenants, allReservations] = await Promise.all([
     listTenants(),
@@ -19,8 +19,11 @@ export default async function NewReceiptPage() {
   }));
   return (
     <div className="space-y-6">
-      <PageHeader title="Upload Receipt" description="File a tenant receipt to Google Drive." />
-      <ReceiptUploadForm tenants={tenants} reservations={reservations} />
+      <PageHeader
+        title="Upload Receipt"
+        description="File a reservation fee or other marketing receipt to Google Drive."
+      />
+      <ReceiptUploadForm tenants={tenants} reservations={reservations} mode="marketing" />
     </div>
   );
 }

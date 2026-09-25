@@ -122,7 +122,7 @@ export async function recalculateForecasts(): Promise<number> {
 
       if (lease) {
         const end = new Date(lease.end_date);
-        const bufferDays = Number(lease.notice_period_days ?? 0) + 7; // +7 turnover buffer
+        const bufferDays = Number(lease.notice_period_days ?? 0);
         end.setDate(end.getDate() + bufferDays);
         date = end.toISOString().slice(0, 10);
         confidence = "estimated";

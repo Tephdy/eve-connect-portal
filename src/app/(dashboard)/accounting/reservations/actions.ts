@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { assertPermission } from "@/lib/auth/guard";
 import { getSession } from "@/lib/auth/get-session";
 import { createReservation, releaseReservation, verifyReservation } from "@/lib/db/unit-reservations";
+import { getInvoiceByReservation, setInvoiceStatus } from "@/lib/db/invoices";
 import { logAudit } from "@/lib/audit/log";
 import type { ActionResult } from "@/lib/actions/result";
 
@@ -127,6 +128,20 @@ export async function verifyReservationAction(
       notes,
       verified_by: session?.id ?? null,
     });
+
+    // Sync the linked invoice status
+    try {
+      const invoice = await getInvoiceByReservation(id);
+      if (invoice) {
+        const nextStatus =
+          updated.verification_status === "verified" ? "paid" : "unpaid";
+        if (invoice.status !== nextStatus) {
+          await setInvoiceStatus(invoice.id, nextStatus);
+        }
+      }
+    } catch (err) {
+      console.error("[verifyReservationAction] invoice sync failed:", err);
+    }
 
     await logAudit({
       actor_id: session?.id ?? null,

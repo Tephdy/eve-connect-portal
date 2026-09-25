@@ -13,10 +13,13 @@ import type { ActionResult } from "@/lib/actions/result";
 import type { Lease } from "@/lib/db/leases";
 
 const TYPES = [
-  { value: "rent",    label: "Rent" },
-  { value: "deposit", label: "Deposit" },
-  { value: "penalty", label: "Penalty" },
-  { value: "other",   label: "Other" },
+  { value: "rent",            label: "Rent" },
+  { value: "utility",         label: "Utility" },
+  { value: "deposit",         label: "Deposit" },
+  { value: "penalty",         label: "Penalty" },
+  { value: "add-ons",         label: "Add-ons" },
+  { value: "reservation_fee", label: "Reservation fee" },
+  { value: "other",           label: "Other" },
 ];
 
 function SubmitButton() {

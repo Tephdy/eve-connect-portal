@@ -15,8 +15,11 @@ const STATUS_TONE: Record<string, "gray" | "green" | "yellow" | "red"> = {
 
 const TYPE_LABEL: Record<string, string> = {
   rent: "Rent",
+  utility: "Utility",
   deposit: "Deposit",
   penalty: "Penalty",
+  "add-ons": "Add-ons",
+  reservation_fee: "Reservation fee",
   other: "Other",
 };
 

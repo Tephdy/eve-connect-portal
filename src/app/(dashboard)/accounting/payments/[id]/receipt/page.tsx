@@ -2,10 +2,11 @@ import { notFound } from "next/navigation";
 import { requirePagePermission } from "@/lib/auth/guard";
 import { getPayment } from "@/lib/db/payments";
 import { getInvoice } from "@/lib/db/invoices";
-import { getLease } from "@/lib/db/leases";
+import { getLease, listLeases } from "@/lib/db/leases";
 import { getTenant } from "@/lib/db/tenants";
 import { getUnit } from "@/lib/db/units";
 import { getProperty } from "@/lib/db/properties";
+import { createClient } from "@/lib/supabase/server";
 import { formatPHP } from "@/lib/utils/format-php";
 import { PrintButton } from "@/components/accounting/print-button";
 import { Card, CardBody } from "@/components/ui/card";
@@ -21,10 +22,55 @@ export default async function ReceiptPage({
   if (!payment) notFound();
 
   const invoice = await getInvoice(payment.invoice_id);
-  const lease = invoice ? await getLease(invoice.lease_id) : null;
-  const tenant = lease ? await getTenant(lease.tenant_id) : null;
-  const unit = lease ? await getUnit(lease.unit_id) : null;
-  const property = unit ? await getProperty(unit.property_id) : null;
+
+  // Preferred path: the invoice carries a lease_id.
+  let lease = invoice && invoice.lease_id ? await getLease(invoice.lease_id) : null;
+
+  // Fallback: no lease on the invoice (e.g. reservation-fee).
+  // Resolve the tenant from the invoice or payment, then find
+  // the tenant's current lease for property/unit.
+  // Prefer the invoice's own tenant_id (works even if the lease was deleted),
+    // then the payment's, then the lease's.
+    const tenantId =
+      invoice?.tenant_id ??
+      payment.tenant_id ??
+      (lease?.tenant_id ?? null);
+
+  if (!lease && tenantId) {
+    const tenantLeases = await listLeases({});
+    const mine = (tenantLeases as any[]).filter((l) => l.tenant_id === tenantId);
+    lease =
+      mine.find((l) => l.status === "active" || l.status === "expiring") ??
+      mine[0] ??
+      null;
+  }
+
+  const tenant = tenantId ? await getTenant(tenantId) : null;
+  let unit = lease ? await getUnit(lease.unit_id) : null;
+  let property = unit ? await getProperty(unit.property_id) : null;
+
+  // Fallback: reservation-fee receipts have no tenant yet. Read the
+  // client + unit directly from the reservation.
+  let reservationClientName: string | null = null;
+  if (!tenant && invoice?.reservation_id) {
+    const sb = await createClient();
+    const { data: res } = await sb
+      .schema("acct")
+      .from("unit_reservation")
+      .select("client_name, unit_id")
+      .eq("id", invoice.reservation_id)
+      .maybeSingle();
+    if (res) {
+      reservationClientName = (res as any).client_name ?? null;
+      const rUnitId = (res as any).unit_id ?? null;
+      if (!unit && rUnitId) {
+        unit = await getUnit(rUnitId);
+        if (unit) {
+          property = await getProperty(unit.property_id);
+        }
+      }
+    }
+  }
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -52,6 +98,21 @@ export default async function ReceiptPage({
             <Row label="Received from" value={tenant?.full_name ?? "—"} />
             <Row label="Property" value={property?.name ?? "—"} />
             <Row label="Unit" value={unit?.unit_number ?? "—"} />
+            <Row
+              label="Payment for"
+              value={
+                ({
+                  rent: "Rent",
+                  utility: "Utility",
+                  deposit: "Deposit",
+                  penalty: "Penalty",
+                  "add-ons": "Add-ons",
+                  reservation_fee: "Reservation fee",
+                  other: "Other",
+                } as Record<string, string>)[invoice?.type ?? ""] ??
+                (invoice?.type ?? "—")
+              }
+            />
             <Row label="Invoice" value={invoice?.display_number ?? "—"} />
             <Row label="Method" value={payment.method.replace("_", " ")} />
             {payment.reference_no && (

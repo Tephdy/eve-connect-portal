@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type PaymentFor =
-  | "rent" | "utility" | "deposits" | "overdue" | "add-ons" | "all" | "others";
+  | "rent" | "utility" | "deposits" | "overdue" | "add-ons"
+  | "reservation-fee" | "all" | "others";
 
 export type TenantReceipt = {
   id: string;
@@ -20,13 +21,14 @@ export type TenantReceipt = {
   uploaded_at: string;
   notes: string | null;
   payment_month: string | null;
+  reference_no: string | null;
   tenant_name?: string;
   unit_number?: string;
   property_name?: string;
 };
 
 const SELECT =
-  "id, tenant_id, property_id, unit_id, payment_for, custom_label, reservation_id, drive_folder_id, drive_folder_url, drive_file_ids, uploaded_by, uploaded_at, notes, payment_month";
+  "id, tenant_id, property_id, unit_id, payment_for, custom_label, reservation_id, drive_folder_id, drive_folder_url, drive_file_ids, uploaded_by, uploaded_at, notes, payment_month, reference_no";
 
 export type ReceiptFilter = {
   tenant_id?: string;
@@ -136,6 +138,7 @@ export async function createReceipt(input: {
   uploaded_by: string | null;
   notes: string | null;
   payment_month?: string | null;
+  reference_no?: string | null;
 }): Promise<TenantReceipt> {
   const admin = createAdminClient();
   const { data, error } = await admin

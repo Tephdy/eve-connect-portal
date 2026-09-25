@@ -5,8 +5,17 @@ import type { InvoiceCreateInput } from "@/lib/schemas/invoice";
 
 export type Invoice = {
   id: string;
-  lease_id: string;
-  type: "rent" | "deposit" | "penalty" | "other";
+  lease_id: string | null;
+  reservation_id: string | null;
+  tenant_id: string | null;
+  type:
+    | "rent"
+    | "utility"
+    | "deposit"
+    | "penalty"
+    | "add-ons"
+    | "reservation_fee"
+    | "other";
   amount: number;
   due_date: string;
   status: "unpaid" | "paid" | "overdue" | "void";
@@ -20,33 +29,55 @@ export type Invoice = {
 };
 
 const INVOICE_SELECT =
-  "id, lease_id, type, amount, due_date, status, created_at, display_number";
+  "id, lease_id, type, amount, due_date, status, created_at, display_number, reservation_id, tenant_id";
 
 async function enrich(rows: Invoice[]): Promise<Invoice[]> {
   if (rows.length === 0) return rows;
   const supabase = await createClient();
-  const leaseIds = Array.from(new Set(rows.map((r) => r.lease_id)));
 
-  const { data: leases } = await supabase
-    .from("lease")
-    .select("id, tenant_id, unit_id, property_id")
-    .in("id", leaseIds);
+  // --- Leases (for fallback) ---
+  const leaseIds = Array.from(
+    new Set(rows.map((r) => r.lease_id).filter(Boolean))
+  ) as string[];
 
-  const tenantIds = Array.from(new Set((leases ?? []).map((l) => l.tenant_id)));
-  const unitIds   = Array.from(new Set((leases ?? []).map((l) => l.unit_id)));
+  const { data: leases } = leaseIds.length > 0
+    ? await supabase
+        .from("lease")
+        .select("id, tenant_id, unit_id, property_id")
+        .in("id", leaseIds)
+    : { data: [] as any[] };
 
-  const [{ data: tenants }, { data: units }] = await Promise.all([
-    tenantIds.length > 0
-      ? supabase.from("tenant").select("id, full_name").in("id", tenantIds)
-      : Promise.resolve({ data: [] as { id: string; full_name: string }[] }),
-    unitIds.length > 0
-      ? supabase.from("unit").select("id, unit_number, property_id").in("id", unitIds)
-      : Promise.resolve({ data: [] as { id: string; unit_number: string; property_id: string | null }[] }),
-  ]);
+  // --- Tenants: union of invoice.tenant_id and lease.tenant_id ---
+  const leaseTenantIds = (leases ?? [])
+    .map((l: any) => l.tenant_id)
+    .filter(Boolean);
+  const directTenantIds = rows.map((r) => r.tenant_id).filter(Boolean);
+  const allTenantIds = Array.from(
+    new Set([...directTenantIds, ...leaseTenantIds])
+  );
 
-  const lMap = new Map((leases ?? []).map((l) => [l.id, l]));
-  const tMap = new Map((tenants ?? []).map((t) => [t.id, t.full_name]));
-  const uMap = new Map((units ?? []).map((u) => [u.id, u.unit_number]));
+  const { data: tenants } = allTenantIds.length > 0
+    ? await supabase
+        .from("tenant")
+        .select("id, full_name")
+        .in("id", allTenantIds)
+    : { data: [] as { id: string; full_name: string }[] };
+
+  // --- Units (for fallback display) ---
+  const unitIds = Array.from(
+    new Set((leases ?? []).map((l: any) => l.unit_id).filter(Boolean))
+  );
+
+  const { data: units } = unitIds.length > 0
+    ? await supabase
+        .from("unit")
+        .select("id, unit_number, property_id")
+        .in("id", unitIds)
+    : { data: [] as any[] };
+
+  const lMap = new Map((leases ?? []).map((l: any) => [l.id, l]));
+  const tMap = new Map((tenants ?? []).map((t: any) => [t.id, t.full_name]));
+  const uMap = new Map((units ?? []).map((u: any) => [u.id, u.unit_number]));
 
   const propertyIds = Array.from(
     new Set((units ?? []).map((u: any) => u.property_id).filter(Boolean))
@@ -55,20 +86,53 @@ async function enrich(rows: Invoice[]): Promise<Invoice[]> {
     ? await supabase.from("property").select("id, name").in("id", propertyIds)
     : { data: [] as { id: string; name: string }[] };
   const pMap = new Map((properties ?? []).map((p: any) => [p.id, p.name]));
-  const unitPropMap = new Map((units ?? []).map((u: any) => [u.id, u.property_id]));
+  const unitPropMap = new Map(
+    (units ?? []).map((u: any) => [u.id, u.property_id])
+  );
+
+  // --- Reservations (for the last-resort fallback) ---
+  const resIds = Array.from(
+    new Set(rows.map((r: any) => r.reservation_id).filter(Boolean))
+  ) as string[];
+  const { data: reservations } = resIds.length > 0
+    ? await supabase
+        .schema("acct")
+        .from("unit_reservation")
+        .select("id, client_name, unit_id")
+        .in("id", resIds)
+    : { data: [] as any[] };
+  const rMap = new Map((reservations ?? []).map((r: any) => [r.id, r]));
 
   rows.forEach((r) => {
-    const l = lMap.get(r.lease_id);
+    // 1) Prefer the invoice's own tenant_id (works even if the lease was deleted)
+    if ((r as any).tenant_id) {
+      r.tenant_name = tMap.get((r as any).tenant_id);
+    }
+
+    // 2) Fallback: walk the lease
+    const l = r.lease_id ? lMap.get(r.lease_id) : null;
     if (l) {
-      r.tenant_name = tMap.get(l.tenant_id);
-      r.unit_number = uMap.get(l.unit_id);
-      const propId = unitPropMap.get(l.unit_id);
+      if (!r.tenant_name) r.tenant_name = tMap.get((l as any).tenant_id);
+      r.unit_number = uMap.get((l as any).unit_id);
+      const propId = unitPropMap.get((l as any).unit_id);
       if (propId) {
         r.property_id = propId;
         r.property_name = pMap.get(propId);
       }
     }
+
+    // 3) Last resort: reservation-only invoices with no tenant yet
+    if (!r.tenant_name && (r as any).reservation_id) {
+      const res: any = rMap.get((r as any).reservation_id);
+      if (res) {
+        r.tenant_name = res.client_name;
+        if (!r.unit_number && res.unit_id) {
+          r.unit_number = uMap.get(res.unit_id);
+        }
+      }
+    }
   });
+
   return rows;
 }
 
@@ -148,8 +212,26 @@ function logWriteError(fn: string, error: unknown) {
   console.error("[" + fn + "]", safe);
 }
 
-export async function createInvoice(input: InvoiceCreateInput): Promise<Invoice> {
+export async function createInvoice(
+  input: InvoiceCreateInput & {
+    reservation_id?: string | null;
+    tenant_id?: string | null;
+    status?: "unpaid" | "paid" | "overdue" | "void";
+  }
+): Promise<Invoice> {
   const admin = createAdminClient();
+
+  // If the caller didn't supply tenant_id but we have a lease_id,
+  // resolve it from the lease so both profiles see this invoice.
+  let tenant_id = input.tenant_id ?? null;
+  if (!tenant_id && input.lease_id) {
+    const { data: lease } = await admin
+      .from("lease")
+      .select("tenant_id")
+      .eq("id", input.lease_id)
+      .maybeSingle();
+    tenant_id = (lease as any)?.tenant_id ?? null;
+  }
   const { data, error } = await admin
     .from("invoice")
     .insert({
@@ -157,7 +239,9 @@ export async function createInvoice(input: InvoiceCreateInput): Promise<Invoice>
       type: input.type,
       amount: input.amount,
       due_date: input.due_date,
-      status: "unpaid",
+      status: input.status ?? "unpaid",
+      reservation_id: input.reservation_id ?? null,
+      tenant_id,
     })
     .select(INVOICE_SELECT)
     .single();
@@ -215,4 +299,35 @@ export async function dashboardStats(): Promise<{
     overdue_count: (overdue ?? []).length,
     due_this_week: (dueWeek ?? []).length,
   };
+}
+
+
+/**
+ * Set the status of an invoice directly. Used by the reservation-verify flow.
+ */
+export async function setInvoiceStatus(
+  id: string,
+  status: "unpaid" | "paid" | "overdue" | "void"
+): Promise<void> {
+  const admin = createAdminClient();
+  const { error } = await admin.from("invoice").update({ status }).eq("id", id);
+  if (error) { logWriteError("setInvoiceStatus", error); throw new Error(error.message); }
+}
+
+/**
+ * Find the invoice linked to a reservation, if any.
+ */
+export async function getInvoiceByReservation(
+  reservation_id: string
+): Promise<Invoice | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("invoice")
+    .select(INVOICE_SELECT)
+    .eq("reservation_id", reservation_id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as Invoice) ?? null;
 }

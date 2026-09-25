@@ -36,7 +36,7 @@ export default async function MarketingCalendarPage() {
         expiringCount={expiring.length}
         expiringDays={90}
         expiringHref="/marketing/calendar"
-        allowedTypes={["lease_ending"]}
+        allowedTypes={["lease_ending", "notice_due"]}
       />
     </div>
   );

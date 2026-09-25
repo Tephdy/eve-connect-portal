@@ -183,6 +183,26 @@ export async function releaseReservation(input: {
     .eq("id", open.id);
   if (updateErr) throw new Error(updateErr.message);
 
+  // Void any unpaid invoice linked to this reservation (Q3=C)
+  try {
+    const { data: inv } = await admin
+      .schema("acct")
+      .from("invoice")
+      .select("id, status")
+      .eq("reservation_id", open.id)
+      .maybeSingle();
+    if (inv && inv.status === "unpaid") {
+      await admin
+        .schema("acct")
+        .from("invoice")
+        .update({ status: "void" })
+        .eq("id", inv.id);
+      // voidLinkedInvoice marker
+    }
+  } catch (err) {
+    console.error("[releaseReservation] invoice void failed:", err);
+  }
+
   await admin
     .from("unit")
     .update({ status: input.new_status ?? "vacant" })

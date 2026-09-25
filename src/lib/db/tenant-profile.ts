@@ -135,15 +135,14 @@ export async function getTenantProfile(tenant_id: string): Promise<TenantProfile
     unit_number: l.unit_number ?? unitMap.get(l.unit_id)?.unit_number ?? null,
   }));
 
-  let invoices: any[] = [];
-  if (leaseIds.length > 0) {
-    const { data } = await supabase
-      .from("invoice")
-      .select("id, lease_id, display_number, type, amount, due_date, status, created_at")
-      .in("lease_id", leaseIds)
-      .order("due_date", { ascending: false });
-    invoices = data ?? [];
-  }
+  // Query invoices by tenant_id directly. Reservation-fee invoices
+  // have lease_id = null but do have tenant_id, so this catches them.
+  const { data: invoiceData } = await supabase
+    .from("invoice")
+    .select("id, lease_id, display_number, type, amount, due_date, status, created_at")
+    .eq("tenant_id", tenant_id)
+    .order("due_date", { ascending: false });
+  const invoices: any[] = invoiceData ?? [];
 
   const invoiceIds = invoices.map((i) => i.id);
   const invoiceMap = new Map(invoices.map((i) => [i.id, i]));
@@ -154,15 +153,13 @@ export async function getTenantProfile(tenant_id: string): Promise<TenantProfile
     unit_number: unitMap.get(leaseToUnit.get(inv.lease_id) ?? "")?.unit_number ?? null,
   }));
 
-  let payments: any[] = [];
-  if (invoiceIds.length > 0) {
-    const { data } = await supabase
-      .from("payment")
-      .select("id, invoice_id, receipt_number, amount, method, reference_no, paid_at")
-      .in("invoice_id", invoiceIds)
-      .order("paid_at", { ascending: false });
-    payments = data ?? [];
-  }
+  // Query payments by tenant_id directly
+  const { data: paymentData } = await supabase
+    .from("payment")
+    .select("id, invoice_id, receipt_number, amount, method, reference_no, paid_at")
+    .eq("tenant_id", tenant_id)
+    .order("paid_at", { ascending: false });
+  const payments: any[] = paymentData ?? [];
 
   const enrichedPayments = payments.map((p) => ({
     ...p,

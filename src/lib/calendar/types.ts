@@ -3,6 +3,7 @@ export type CalendarEventType =
   | "invoice_due"
   | "lease_starting"
   | "lease_ending"
+  | "notice_due"
   | "payment";
 
 export type ViewMode = "month" | "week" | "list";
@@ -39,6 +40,7 @@ export const ALL_TYPES: CalendarEventType[] = [
   "invoice_due",
   "lease_starting",
   "lease_ending",
+  "notice_due",
   "payment",
 ];
 
@@ -47,6 +49,7 @@ export const TYPE_LABELS: Record<CalendarEventType, string> = {
   invoice_due: "Invoice due",
   lease_starting: "Lease starts",
   lease_ending: "Lease ends",
+  notice_due: "Notice due",
   payment: "Payment received",
 };
 
@@ -77,6 +80,12 @@ export const TYPE_COLORS: Record<
     bg: "bg-danger-500/10",
     text: "text-danger-700 dark:text-danger-500",
     border: "border-danger-500/30",
+  },
+  notice_due: {
+    dot: "bg-amber-500",
+    bg: "bg-amber-500/10",
+    text: "text-amber-700 dark:text-amber-400",
+    border: "border-amber-500/30",
   },
   payment: {
     dot: "bg-success-500",
