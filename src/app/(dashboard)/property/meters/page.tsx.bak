@@ -43,18 +43,10 @@ export default async function MetersPage({
         title="Meters"
         description="Electricity, water, and other meters by unit."
         action={
-          <div className="flex gap-2">
-            <Link
-              href="/property/utilities/readings"
-              className="inline-flex items-center rounded-md border border-line-300 px-3 py-1.5 text-sm font-medium hover:bg-surface-100"
-            >
-              Bulk readings
-            </Link>
-            <AddMeterDialog
-              properties={properties.map((p) => ({ id: p.id, name: p.name }))}
-              units={units}
-            />
-          </div>
+          <AddMeterDialog
+            properties={properties.map((p) => ({ id: p.id, name: p.name }))}
+            units={units}
+          />
         }
       />
 

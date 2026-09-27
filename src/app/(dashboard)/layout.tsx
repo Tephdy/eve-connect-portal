@@ -14,14 +14,14 @@ export default async function DashboardLayout({
   const user = await getSession();
   if (!user) redirect("/login");
 
-  const roles = await getUserRoles();
-
-  let reminders = [] as Awaited<ReturnType<typeof getReminders>>;
-  try {
-    reminders = await getReminders();
-  } catch (err) {
-    console.error("[layout] failed to load reminders", err);
-  }
+  const [roles, remindersResult] = await Promise.all([
+    getUserRoles(),
+    getReminders().catch((err) => {
+      console.error("[layout] failed to load reminders", err);
+      return [] as Awaited<ReturnType<typeof getReminders>>;
+    }),
+  ]);
+  const reminders = remindersResult;
 
   return (
     <DashboardShell

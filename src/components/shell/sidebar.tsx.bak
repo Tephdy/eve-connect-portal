@@ -30,10 +30,6 @@ import {
   KeyRound,
   Calendar as CalendarIcon,
   ChevronDown,
-  Gauge,
-  Droplets,
-  Zap,
-  Percent,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
@@ -74,16 +70,6 @@ const GROUPS: NavGroup[] = [
       { href: "/property/templates",  label: "Templates",  icon: ScrollText, roles: ["property_rep", "executive"] },
       { href: "/property/receipts",     label: "Receipts",       icon: Upload, roles: ["property_rep", "executive"] },
       { href: "/property/receipts/new", label: "Upload Receipt", icon: Upload, roles: ["property_rep"] },
-    ],
-  },
-  {
-    label: "Utilities",
-    roles: ["property_rep", "accounting", "executive"],
-    items: [
-      { href: "/property/meters",             label: "Meters",   icon: Gauge,    roles: ["property_rep", "accounting", "executive"] },
-      { href: "/property/utilities/readings", label: "Readings", icon: Droplets, roles: ["property_rep", "accounting", "executive"] },
-      { href: "/property/utilities/billing",  label: "Billing",  icon: Zap,      roles: ["accounting", "executive"] },
-      { href: "/property/utilities/rates",    label: "Rates",    icon: Percent,  roles: ["accounting", "executive"] },
     ],
   },
   {

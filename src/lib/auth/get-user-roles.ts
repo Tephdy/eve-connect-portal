@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { getSession } from "./get-session";
 import { createClient } from "@/lib/supabase/server";
 
 export type UserRole = {
@@ -8,10 +9,10 @@ export type UserRole = {
 };
 
 export const getUserRoles = cache(async (): Promise<UserRole[]> => {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSession();
   if (!user) return [];
 
+  const supabase = await createClient();
   const { data, error } = await supabase
     .from("user_role")
     .select("role_key, scope_type, scope_property_id")

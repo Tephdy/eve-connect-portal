@@ -35,73 +35,54 @@ async function enrich(rows: Invoice[]): Promise<Invoice[]> {
   if (rows.length === 0) return rows;
   const supabase = await createClient();
 
-  // --- Leases (for fallback) ---
-  const leaseIds = Array.from(
-    new Set(rows.map((r) => r.lease_id).filter(Boolean))
-  ) as string[];
+  // 1) Leases & Reservations in parallel (known directly from invoice rows)
+  const leaseIds = Array.from(new Set(rows.map((r) => r.lease_id).filter(Boolean))) as string[];
+  const resIds = Array.from(new Set(rows.map((r: any) => r.reservation_id).filter(Boolean))) as string[];
 
-  const { data: leases } = leaseIds.length > 0
-    ? await supabase
-        .from("lease")
-        .select("id, tenant_id, unit_id, property_id")
-        .in("id", leaseIds)
-    : { data: [] as any[] };
+  const [leasesRes, reservationsRes] = await Promise.all([
+    leaseIds.length > 0
+      ? supabase.from("lease").select("id, tenant_id, unit_id, property_id").in("id", leaseIds)
+      : Promise.resolve({ data: [] as any[] }),
+    resIds.length > 0
+      ? supabase.schema("acct").from("unit_reservation").select("id, client_name, unit_id").in("id", resIds)
+      : Promise.resolve({ data: [] as any[] }),
+  ]);
 
-  // --- Tenants: union of invoice.tenant_id and lease.tenant_id ---
-  const leaseTenantIds = (leases ?? [])
-    .map((l: any) => l.tenant_id)
-    .filter(Boolean);
+  const leases = leasesRes.data ?? [];
+  const reservations = reservationsRes.data ?? [];
+
+  // 2) Tenants & Units in parallel
+  const leaseTenantIds = leases.map((l: any) => l.tenant_id).filter(Boolean);
   const directTenantIds = rows.map((r) => r.tenant_id).filter(Boolean);
-  const allTenantIds = Array.from(
-    new Set([...directTenantIds, ...leaseTenantIds])
-  );
+  const allTenantIds = Array.from(new Set([...directTenantIds, ...leaseTenantIds]));
 
-  const { data: tenants } = allTenantIds.length > 0
-    ? await supabase
-        .from("tenant")
-        .select("id, full_name")
-        .in("id", allTenantIds)
-    : { data: [] as { id: string; full_name: string }[] };
+  const unitIds = Array.from(new Set(leases.map((l: any) => l.unit_id).filter(Boolean)));
 
-  // --- Units (for fallback display) ---
-  const unitIds = Array.from(
-    new Set((leases ?? []).map((l: any) => l.unit_id).filter(Boolean))
-  );
+  const [tenantsRes, unitsRes] = await Promise.all([
+    allTenantIds.length > 0
+      ? supabase.from("tenant").select("id, full_name").in("id", allTenantIds)
+      : Promise.resolve({ data: [] as any[] }),
+    unitIds.length > 0
+      ? supabase.from("unit").select("id, unit_number, property_id").in("id", unitIds)
+      : Promise.resolve({ data: [] as any[] }),
+  ]);
 
-  const { data: units } = unitIds.length > 0
-    ? await supabase
-        .from("unit")
-        .select("id, unit_number, property_id")
-        .in("id", unitIds)
-    : { data: [] as any[] };
+  const tenants = tenantsRes.data ?? [];
+  const units = unitsRes.data ?? [];
 
-  const lMap = new Map((leases ?? []).map((l: any) => [l.id, l]));
-  const tMap = new Map((tenants ?? []).map((t: any) => [t.id, t.full_name]));
-  const uMap = new Map((units ?? []).map((u: any) => [u.id, u.unit_number]));
+  const lMap = new Map(leases.map((l: any) => [l.id, l]));
+  const tMap = new Map(tenants.map((t: any) => [t.id, t.full_name]));
+  const uMap = new Map(units.map((u: any) => [u.id, u.unit_number]));
+  const rMap = new Map(reservations.map((r: any) => [r.id, r]));
 
-  const propertyIds = Array.from(
-    new Set((units ?? []).map((u: any) => u.property_id).filter(Boolean))
-  );
+  // 3) Properties
+  const propertyIds = Array.from(new Set(units.map((u: any) => u.property_id).filter(Boolean)));
   const { data: properties } = propertyIds.length > 0
     ? await supabase.from("property").select("id, name").in("id", propertyIds)
     : { data: [] as { id: string; name: string }[] };
-  const pMap = new Map((properties ?? []).map((p: any) => [p.id, p.name]));
-  const unitPropMap = new Map(
-    (units ?? []).map((u: any) => [u.id, u.property_id])
-  );
 
-  // --- Reservations (for the last-resort fallback) ---
-  const resIds = Array.from(
-    new Set(rows.map((r: any) => r.reservation_id).filter(Boolean))
-  ) as string[];
-  const { data: reservations } = resIds.length > 0
-    ? await supabase
-        .schema("acct")
-        .from("unit_reservation")
-        .select("id, client_name, unit_id")
-        .in("id", resIds)
-    : { data: [] as any[] };
-  const rMap = new Map((reservations ?? []).map((r: any) => [r.id, r]));
+  const pMap = new Map((properties ?? []).map((p: any) => [p.id, p.name]));
+  const unitPropMap = new Map(units.map((u: any) => [u.id, u.property_id]));
 
   rows.forEach((r) => {
     // 1) Prefer the invoice's own tenant_id (works even if the lease was deleted)

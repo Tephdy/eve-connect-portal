@@ -41,29 +41,31 @@ export async function getExecSummary(): Promise<ExecSummary> {
   const in60 = new Date(today.getTime() + 60 * 86400000).toISOString().slice(0, 10);
 
   const [
-    paymentsMonth, payments30d, paymentsYtd,
-    invoicesUnpaid, invoicesOverdue,
-    units, leasesActive, leasesExpiring30, leasesExpiring60,
-    jobsOpen, jobsPending, jobsInProgress,
-    listingsPub, inquiriesOpen,
+    paymentsYtd,
+    invoices,
+    units,
+    leasesActive,
+    jobOrders,
+    listingsPub,
+    inquiriesOpen,
   ] = await Promise.all([
-    supabase.from("payment").select("amount").gte("paid_at", monthStart),
-    supabase.from("payment").select("amount").gte("paid_at", thirtyDaysAgo),
-    supabase.from("payment").select("amount").gte("paid_at", ytdStart),
-    supabase.from("invoice").select("amount").in("status", ["unpaid","overdue"]),
-    supabase.from("invoice").select("id").eq("status", "overdue"),
+    supabase.from("payment").select("amount, paid_at").gte("paid_at", ytdStart),
+    supabase.from("invoice").select("id, amount, status").in("status", ["unpaid", "overdue"]),
     supabase.from("unit").select("status"),
     supabase.from("lease").select("id, end_date").eq("status", "active"),
-    supabase.from("lease").select("id, end_date").eq("status", "active").lte("end_date", in30).gte("end_date", todayStr),
-    supabase.from("lease").select("id, end_date").eq("status", "active").lte("end_date", in60).gte("end_date", todayStr),
-    supabase.from("job_order").select("id").in("status", ["open","assigned","in_progress"]),
-    supabase.from("job_order").select("id").eq("status", "pending_approval"),
-    supabase.from("job_order").select("id").eq("status", "in_progress"),
+    supabase.from("job_order").select("id, status").in("status", ["open", "assigned", "in_progress", "pending_approval"]),
     supabase.from("listing").select("id").eq("status", "published"),
-    supabase.from("inquiry").select("id").in("status", ["open","contacted"]),
+    supabase.from("inquiry").select("id").in("status", ["open", "contacted"]),
   ]);
 
-  const sum = (rows: any[] | null) => (rows ?? []).reduce((s, r) => s + Number(r.amount ?? 0), 0);
+  const pyRows = paymentsYtd.data ?? [];
+  const revMonth = pyRows.filter((p) => p.paid_at >= monthStart).reduce((s, r) => s + Number(r.amount ?? 0), 0);
+  const rev30d = pyRows.filter((p) => p.paid_at >= thirtyDaysAgo).reduce((s, r) => s + Number(r.amount ?? 0), 0);
+  const revYtd = pyRows.reduce((s, r) => s + Number(r.amount ?? 0), 0);
+
+  const invRows = invoices.data ?? [];
+  const outstandingTotal = invRows.reduce((s, r) => s + Number(r.amount ?? 0), 0);
+  const overdueCount = invRows.filter((i) => i.status === "overdue").length;
 
   const unitRows = (units.data ?? []) as { status: string }[];
   const totalUnits = unitRows.length;
@@ -71,25 +73,35 @@ export async function getExecSummary(): Promise<ExecSummary> {
   const vacant = unitRows.filter((u) => u.status === "vacant").length;
   const occPct = totalUnits > 0 ? Math.round((occupied / totalUnits) * 100) : 0;
 
+  const leaseRows = leasesActive.data ?? [];
+  const activeLeasesCount = leaseRows.length;
+  const leasesExp30 = leaseRows.filter((l) => l.end_date && l.end_date >= todayStr && l.end_date <= in30).length;
+  const leasesExp60 = leaseRows.filter((l) => l.end_date && l.end_date >= todayStr && l.end_date <= in60).length;
+
+  const jobRows = jobOrders.data ?? [];
+  const jobsOpen = jobRows.filter((j) => ["open", "assigned", "in_progress"].includes(j.status)).length;
+  const jobsPending = jobRows.filter((j) => j.status === "pending_approval").length;
+  const jobsInProgress = jobRows.filter((j) => j.status === "in_progress").length;
+
   return {
-    revenue_this_month: sum(paymentsMonth.data),
-    revenue_last_30d: sum(payments30d.data),
-    revenue_ytd: sum(paymentsYtd.data),
-    outstanding_total: sum(invoicesUnpaid.data),
-    overdue_count: (invoicesOverdue.data ?? []).length,
+    revenue_this_month: revMonth,
+    revenue_last_30d: rev30d,
+    revenue_ytd: revYtd,
+    outstanding_total: outstandingTotal,
+    overdue_count: overdueCount,
 
     total_units: totalUnits,
     occupied_units: occupied,
     vacant_units: vacant,
     occupancy_pct: occPct,
 
-    active_leases: (leasesActive.data ?? []).length,
-    leases_expiring_30d: (leasesExpiring30.data ?? []).length,
-    leases_expiring_60d: (leasesExpiring60.data ?? []).length,
+    active_leases: activeLeasesCount,
+    leases_expiring_30d: leasesExp30,
+    leases_expiring_60d: leasesExp60,
 
-    jobs_open: (jobsOpen.data ?? []).length,
-    jobs_pending_approval: (jobsPending.data ?? []).length,
-    jobs_in_progress: (jobsInProgress.data ?? []).length,
+    jobs_open: jobsOpen,
+    jobs_pending_approval: jobsPending,
+    jobs_in_progress: jobsInProgress,
 
     published_listings: (listingsPub.data ?? []).length,
     open_inquiries: (inquiriesOpen.data ?? []).length,

@@ -12,6 +12,7 @@ type Toast = {
 
 type Ctx = {
   push: (message: string, tone?: Toast["tone"]) => void;
+  toast: (message: string, tone?: Toast["tone"]) => void;
 };
 
 const ToastContext = createContext<Ctx | null>(null);
@@ -48,7 +49,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <ToastContext.Provider value={{ push }}>
+    <ToastContext.Provider value={{ push, toast: push }}>
       {children}
 
       <div className="pointer-events-none fixed inset-x-0 top-6 z-[100] flex flex-col items-center gap-3 px-4">

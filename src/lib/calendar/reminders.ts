@@ -32,14 +32,32 @@ export async function getReminders(): Promise<Reminder[]> {
   const in3 = ymd(new Date(today.getTime() + 3 * 86400000));
   const reminders: Reminder[] = [];
 
-  // ---- Overdue invoices ----
-  const { data: overdue } = await supabase
-    .from("invoice")
-    .select("id, display_number, amount, due_date, lease_id")
-    .eq("status", "overdue")
-    .order("due_date", { ascending: true })
-    .limit(20);
+  const [overdueRes, expiringRes, upcomingRes] = await Promise.all([
+    supabase
+      .from("invoice")
+      .select("id, display_number, amount, due_date, lease_id")
+      .eq("status", "overdue")
+      .order("due_date", { ascending: true })
+      .limit(20),
+    supabase
+      .from("lease")
+      .select("id, end_date, tenant_name, unit_number")
+      .eq("status", "active")
+      .gte("end_date", todayStr)
+      .lte("end_date", in30)
+      .order("end_date", { ascending: true })
+      .limit(20),
+    supabase
+      .from("lease")
+      .select("id, due_date, monthly_rent, tenant_name, unit_number, status, start_date, end_date")
+      .in("status", ["active", "expiring"]),
+  ]);
 
+  const overdue = overdueRes.data;
+  const expiring = expiringRes.data;
+  const upcoming = upcomingRes.data;
+
+  // ---- Overdue invoices ----
   for (const inv of overdue ?? []) {
     const days = Math.ceil(
       (today.getTime() - new Date(inv.due_date).getTime()) / 86400000
@@ -56,15 +74,6 @@ export async function getReminders(): Promise<Reminder[]> {
   }
 
   // ---- Leases expiring soon ----
-  const { data: expiring } = await supabase
-    .from("lease")
-    .select("id, end_date, tenant_name, unit_number")
-    .eq("status", "active")
-    .gte("end_date", todayStr)
-    .lte("end_date", in30)
-    .order("end_date", { ascending: true })
-    .limit(20);
-
   for (const l of expiring ?? []) {
     const days = Math.ceil(
       (new Date(l.end_date).getTime() - today.getTime()) / 86400000
@@ -81,12 +90,6 @@ export async function getReminders(): Promise<Reminder[]> {
       severity: days <= 7 ? "danger" : "warning",
     });
   }
-
-  // ---- Rent dues in the next 3 days ----
-  const { data: upcoming } = await supabase
-    .from("lease")
-    .select("id, due_date, monthly_rent, tenant_name, unit_number, status, start_date, end_date")
-    .in("status", ["active", "expiring"]);
 
   for (const l of upcoming ?? []) {
     if (!l.due_date) continue;
