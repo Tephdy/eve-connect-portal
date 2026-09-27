@@ -33,6 +33,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ThemeProvider>
           <ToastProvider>{children}</ToastProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
