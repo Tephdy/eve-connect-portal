@@ -170,16 +170,13 @@ export async function commitImport(input: {
 
       else if (input.target === "tenants") {
         const email = clean(row.mapped.email).toLowerCase();
-        const statusRaw = clean(row.mapped.status).toLowerCase();
-        const ALLOWED_STATUS = ["prospect", "active", "former", "blacklisted"];
-        const status = ALLOWED_STATUS.includes(statusRaw) ? statusRaw : "active";
         const payload = {
           full_name: clean(row.mapped.full_name),
           email: email || null,
           phone: clean(row.mapped.phone) || null,
           messenger_name: clean(row.mapped.messenger_name) || null,
           government_id: clean(row.mapped.government_id) || null,
-          status,
+          status: "active",
         };
         let tenantId: string | null = null;
         if (row.willSkip && input.updateDuplicates && email) {

@@ -9,6 +9,7 @@ import { Card, CardHeader, CardBody } from "@/components/ui/card";
 import { formatPHP } from "@/lib/utils/format-php";
 import { PaymentForm } from "@/components/accounting/payment-form";
 import { VoidInvoiceButton } from "@/components/accounting/void-invoice-button";
+import { Button } from "@/components/ui/button";
 
 const STATUS_TONE: Record<string, "gray" | "green" | "yellow" | "red"> = {
   unpaid: "yellow", paid: "green", overdue: "red", void: "gray",
@@ -81,6 +82,13 @@ export default async function InvoiceDetailPage({
           {invoice.status !== "paid" && invoice.status !== "void" && (
             <PaymentForm invoiceId={invoice.id} remaining={Number(invoice.amount) - totalPaid} />
           )}
+
+          {invoice.status !== "paid" && invoice.status !== "void" && (
+            <Link href={"/accounting/invoices/" + invoice.id + "/edit"}>
+              <Button variant="secondary">Edit Invoice</Button>
+            </Link>
+          )}
+
           {invoice.status !== "void" && (
             <VoidInvoiceButton id={invoice.id} />
           )}

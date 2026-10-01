@@ -19,6 +19,8 @@ import { formatPHP } from "@/lib/utils/format-php";
 import { invoiceCreateSchema, paymentCreateSchema } from "@/lib/schemas/invoice";
 import { parseForm } from "@/lib/forms/parse";
 import type { ActionResult } from "@/lib/actions/result";
+import { updateInvoice, invoiceHasPayments } from "@/lib/db/invoices";
+import { invoiceUpdateSchema } from "@/lib/schemas/invoice";
 
 export async function createInvoiceAction(
   _prev: ActionResult | null,
@@ -159,4 +161,65 @@ async function sendReceiptEmail(payment: {
     // Receipt email is best-effort — a failure here must not break payment recording
     console.error("[sendReceiptEmail] failed:", err);
   }
+}
+
+export async function updateInvoiceAction(
+  id: string,
+  _prev: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  await assertPermission("invoice:create");
+
+  const parsed = parseForm(invoiceUpdateSchema, formData);
+  if (!parsed.ok)
+    return { ok: false, error: parsed.error, fieldErrors: parsed.fieldErrors };
+
+  // Guard: load current invoice and check status
+  const current = await getInvoice(id);
+  if (!current) return { ok: false, error: "Invoice not found" };
+
+  if (current.status === "paid" || current.status === "void") {
+    return {
+      ok: false,
+      error: "Cannot edit a " + current.status + " invoice",
+    };
+  }
+
+  // Guard: reject if payments exist
+  const hasPayments = await invoiceHasPayments(id);
+  if (hasPayments) {
+    return {
+      ok: false,
+      error: "Cannot edit — payments have been recorded against this invoice",
+    };
+  }
+
+  const session = await getSession();
+  const before = {
+    type: current.type,
+    amount: current.amount,
+    due_date: current.due_date,
+  };
+
+  const updated = await updateInvoice(id, parsed.data);
+
+  await logAudit({
+    actor_id: session?.id ?? null,
+    entity_type: "invoice",
+    entity_id: id,
+    action: "update",
+    before,
+    after: {
+      type: updated.type,
+      amount: updated.amount,
+      due_date: updated.due_date,
+    },
+  });
+
+  revalidatePath("/accounting/invoices");
+  revalidatePath("/accounting/invoices/" + id);
+  revalidatePath("/accounting/calendar");
+  revalidatePath("/property/calendar");
+
+  return { ok: true, data: undefined };
 }

@@ -312,3 +312,34 @@ export async function getInvoiceByReservation(
   if (error) throw new Error(error.message);
   return (data as Invoice) ?? null;
 }
+
+export async function updateInvoice(
+  id: string,
+  patch: { type: string; amount: number; due_date: string }
+): Promise<Invoice> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .from("invoice")
+    .update({
+      type: patch.type,
+      amount: patch.amount,
+      due_date: patch.due_date,
+    })
+    .eq("id", id)
+    .select(INVOICE_SELECT)
+    .single();
+  if (error) {
+    logWriteError("updateInvoice", error);
+    throw new Error(error.message);
+  }
+  return data as Invoice;
+}
+
+export async function invoiceHasPayments(id: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { count } = await supabase
+    .from("payment")
+    .select("id", { count: "exact", head: true })
+    .eq("invoice_id", id);
+  return (count ?? 0) > 0;
+}

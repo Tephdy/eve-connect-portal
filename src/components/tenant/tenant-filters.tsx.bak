@@ -13,18 +13,13 @@ const STATUS_OPTIONS = [
   { value: "blacklisted", label: "Blacklisted" },
 ];
 
-export function TenantFilters({
-  properties,
-}: {
-  properties: { id: string; name: string }[];
-}) {
+export function TenantFilters() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const q = searchParams.get("q") ?? "";
   const status = searchParams.get("status") ?? "";
-  const property = searchParams.get("property") ?? "";
   const hasMessenger = searchParams.get("messenger") === "1";
   const hasEmail = searchParams.get("email") === "1";
 
@@ -65,7 +60,7 @@ export function TenantFilters({
     router.replace(pathname, { scroll: false });
   }
 
-  const hasFilters = !!(q || status || property || hasMessenger || hasEmail);
+  const hasFilters = !!(q || status || hasMessenger || hasEmail);
 
   return (
     <div className="space-y-3 rounded-xl border border-ink-200 bg-surface p-4 dark:border-white/[0.06]">
@@ -83,7 +78,7 @@ export function TenantFilters({
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         {/* Search */}
         <div className="relative md:col-span-2">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
@@ -91,7 +86,7 @@ export function TenantFilters({
             type="text"
             value={localQ}
             onChange={(e) => setLocalQ(e.target.value)}
-            placeholder="Search name, email, phone..."
+            placeholder="Search name, email, phone…"
             className="h-9 w-full rounded-md border border-ink-200 bg-surface pl-9 pr-3 text-sm text-ink-900 placeholder:text-ink-400 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-white/[0.06]"
           />
         </div>
@@ -105,20 +100,6 @@ export function TenantFilters({
           {STATUS_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
-            </option>
-          ))}
-        </select>
-
-        {/* Property */}
-        <select
-          value={property}
-          onChange={(e) => updateParam("property", e.target.value || null)}
-          className="h-9 rounded-md border border-ink-200 bg-surface px-3 text-sm text-ink-800 outline-none transition-colors focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 dark:border-white/[0.06]"
-        >
-          <option value="">All properties</option>
-          {properties.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
             </option>
           ))}
         </select>

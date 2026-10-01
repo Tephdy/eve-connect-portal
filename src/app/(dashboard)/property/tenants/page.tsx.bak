@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requirePagePermission } from "@/lib/auth/guard";
-import { listTenantsWithProperty } from "@/lib/db/tenants";
+import { listTenants } from "@/lib/db/tenants";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/layout/empty-state";
 import { Button } from "@/components/ui/button";
@@ -16,22 +16,16 @@ export default async function TenantsPage({
     status?: string;
     messenger?: string;
     email?: string;
-    property?: string;
   }>;
 }) {
   await requirePagePermission("tenant:read");
   const sp = await searchParams;
 
-  const [allTenants, propertiesRaw] = await Promise.all([
-    listTenantsWithProperty(),
-    (await import("@/lib/db/properties")).listProperties(),
-  ]);
-  const properties = propertiesRaw.map((p) => ({ id: p.id, name: p.name }));
+  const allTenants = await listTenants();
 
   // ---- Apply filters ----
   const q = (sp.q ?? "").trim().toLowerCase();
   const status = sp.status ?? "";
-  const propertyId = sp.property ?? "";
   const hasMessenger = sp.messenger === "1";
   const hasEmail = sp.email === "1";
 
@@ -49,7 +43,6 @@ export default async function TenantsPage({
       if (!hay.includes(q)) return false;
     }
     if (status && t.status !== status) return false;
-    if (propertyId && t.property_id !== propertyId) return false;
     if (hasMessenger && !t.messenger_name) return false;
     if (hasEmail && !t.email) return false;
     return true;
@@ -61,7 +54,7 @@ export default async function TenantsPage({
   const prospects = allTenants.filter((t) => t.status === "prospect").length;
   const former = allTenants.filter((t) => t.status === "former").length;
 
-  const hasFilters = !!(q || status || propertyId || hasMessenger || hasEmail);
+  const hasFilters = !!(q || status || hasMessenger || hasEmail);
 
   return (
     <div className="space-y-6">
@@ -89,7 +82,7 @@ export default async function TenantsPage({
         </div>
       )}
 
-      <TenantFilters properties={properties} />
+      <TenantFilters />
 
       {hasFilters && (
         <p className="text-sm text-ink-500">

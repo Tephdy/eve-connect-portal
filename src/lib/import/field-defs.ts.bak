@@ -56,7 +56,6 @@ export const TARGETS: {
       { key: "phone", label: "Phone", required: false, type: "text", aliases: ["phone", "mobile", "contact", "cell"] },
       { key: "messenger_name", label: "Messenger name", required: false, type: "text", aliases: ["messenger", "messenger name", "fb", "facebook"] },
       { key: "government_id", label: "Government ID", required: false, type: "text", aliases: ["id", "gov id", "government id"] },
-      { key: "status", label: "Status", required: false, type: "enum", enumValues: ["prospect", "active", "former", "blacklisted"], aliases: ["status", "state", "tenant status"], hint: "prospect, active, former, blacklisted" },
       { key: "property_name", label: "Property name", required: false, type: "text", aliases: ["property", "property name", "building"] },
       { key: "unit_number", label: "Unit number", required: false, type: "text", aliases: ["unit", "unit no", "unit number"] },
       { key: "monthly_rent", label: "Monthly rent", required: false, type: "number", aliases: ["rent", "monthly rent", "rate", "monthly rent (php)"] },

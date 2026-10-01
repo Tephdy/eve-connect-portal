@@ -218,7 +218,6 @@ export async function commitImportAction(input: {
     revalidatePath("/property/units");
     revalidatePath("/property/tenants");
     revalidatePath("/property/leases");
-    revalidatePath("/property/calendar");
 
     return { ok: true, data: summary };
   } catch (err) {

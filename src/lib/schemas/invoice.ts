@@ -18,6 +18,14 @@ export const invoiceCreateSchema = z.object({
   due_date: z.string().min(1, "Due date is required"),
 });
 
+export const invoiceUpdateSchema = z.object({
+  type: z.enum(invoiceTypes),
+  amount: z.coerce.number().min(0.01, "Amount must be greater than 0"),
+  due_date: z.string().min(1, "Due date is required"),
+});
+
+export type InvoiceUpdateInput = z.infer<typeof invoiceUpdateSchema>;
+
 export const paymentCreateSchema = z.object({
   invoice_id: z.string().uuid(),
   amount: z.coerce.number().min(0.01, "Amount must be greater than 0"),

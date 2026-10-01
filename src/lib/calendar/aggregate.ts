@@ -158,7 +158,7 @@ export async function getCalendarMonth(
         id: "rent_" + l.id + "_" + day,
         date: day,
         type: "rent_due",
-        title: "Rent due â€” " + (l.tenant_name ?? "Tenant"),
+        title: "Rent due -” " + (l.tenant_name ?? "Tenant"),
         subtitle: info?.unit_number ? "Unit " + info.unit_number : undefined,
         amount: Number(l.monthly_rent ?? 0),
         href: "/property/leases/" + l.id,
@@ -182,7 +182,7 @@ export async function getCalendarMonth(
         type: "invoice_due",
         title:
           (inv.display_number ?? "Invoice") +
-          " â€” " +
+          " -” " +
           (inv.type === "rent"
             ? "Rent"
             : inv.type === "deposit"
@@ -212,7 +212,7 @@ export async function getCalendarMonth(
         id: "start_" + l.id,
         date: l.start_date,
         type: "lease_starting",
-        title: "Lease starts â€” " + (l.tenant_name ?? "Tenant"),
+        title: "Lease starts -” " + (l.tenant_name ?? "Tenant"),
         subtitle: info?.unit_number ? "Unit " + info.unit_number : undefined,
         amount: Number(l.monthly_rent ?? 0),
         href: "/property/leases/" + l.id,
@@ -258,7 +258,7 @@ export async function getCalendarMonth(
             id: "notice_" + l.id + "_" + ym,
             date: noticeStr,
             type: "notice_due",
-            title: "Notice due â€” " + (l.tenant_name ?? "Tenant"),
+            title: "Notice due -” " + (l.tenant_name ?? "Tenant"),
             subtitle:
               "Lease ends " +
               l.end_date +
@@ -298,7 +298,7 @@ export async function getCalendarMonth(
         id: "end_" + l.id,
         date: l.end_date,
         type: "lease_ending",
-        title: "Lease ends â€” " + (l.tenant_name ?? "Tenant"),
+        title: "Lease ends -” " + (l.tenant_name ?? "Tenant"),
         subtitle: info?.unit_number ? "Unit " + info.unit_number : undefined,
         href: "/property/leases/" + l.id,
         source_id: l.id,
@@ -323,7 +323,7 @@ export async function getCalendarMonth(
         title:
           "Payment " +
           (p.receipt_number ?? "") +
-          (l?.tenant_name ? " â€” " + l.tenant_name : ""),
+          (l?.tenant_name ? " -” " + l.tenant_name : ""),
         subtitle: inv?.display_number ? "Invoice " + inv.display_number : undefined,
         amount: Number(p.amount ?? 0),
         href: "/accounting/payments/" + p.id + "/receipt",
@@ -411,8 +411,8 @@ export async function getExpiringSoon(days = 30, property_id?: string | null) {
       id: l.id,
       end_date: l.end_date,
       days_left: daysLeft,
-      tenant_name: l.tenant_name ?? "â€”",
-      unit_number: u?.unit_number ?? "â€”",
+      tenant_name: l.tenant_name ?? "-”",
+      unit_number: u?.unit_number ?? "-”",
       property_id: u?.property_id as string | undefined,
     };
   });
