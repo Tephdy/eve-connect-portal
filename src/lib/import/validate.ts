@@ -48,13 +48,17 @@ export async function validateImport(input: {
 
   const [{ data: properties }, { data: units }, { data: tenants }] =
     await Promise.all([
-      admin.from("property").select("id, name, address"),
-      admin.from("unit").select("id, property_id, unit_number"),
-      admin.from("tenant").select("id, email, full_name"),
+      admin.schema("core").from("property").select("id, name, address"),
+      admin.schema("core").from("unit").select("id, property_id, unit_number"),
+      admin.schema("core").from("tenant").select("id, email, full_name"),
     ]);
 
-  const propByName = new Map<string, string>((properties ?? []).map((p: any) => [String(p.name).toLowerCase(), String(p.id)]));
-  const unitByKey = new Map<string, string>((units ?? []).map((u: any) => [u.property_id + "|" + u.unit_number, String(u.id)]));
+  const propByName = new Map<string, string>(
+    (properties ?? []).map((p: any) => [String(p.name).toLowerCase(), String(p.id)])
+  );
+  const unitByKey = new Map<string, string>(
+    (units ?? []).map((u: any) => [u.property_id + "|" + u.unit_number, String(u.id)])
+  );
   const tenantByEmail = new Map<string, string>(
     (tenants ?? [])
       .filter((t: any) => t.email)
@@ -127,7 +131,7 @@ export async function validateImport(input: {
       }
     }
 
-    // ---- Leases (NEW logic: match by name OR email; property + unit required) ----
+    // ---- Leases ----
     if (input.target === "leases") {
       const propName = mapped.property_name;
       const unitNo = mapped.unit_number;
@@ -158,7 +162,7 @@ export async function validateImport(input: {
         }
       }
 
-      // Tenant must exist — match by email first, then by name
+      // Tenant must exist - match by email first, then by name
       if (fullName || email) {
         const matchedByName = fullName ? tenantByName.get(fullName.toLowerCase()) : undefined;
         const matchedByEmail = email ? tenantByEmail.get(email.toLowerCase()) : undefined;
@@ -201,7 +205,7 @@ export async function validateImport(input: {
         const v = mapped[field.key]!.toLowerCase();
         if (!field.enumValues.includes(v)) {
           warnings.push(
-            field.label + ': "' + mapped[field.key] + '" not in list — using default'
+            field.label + ': "' + mapped[field.key] + '" not in list - using default'
           );
         }
       }

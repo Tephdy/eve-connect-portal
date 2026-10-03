@@ -50,7 +50,6 @@ function normalizeTerm(v: string | null): string | null {
   if (!v) return null;
   const s = v.toLowerCase().replace(/\s+/g, "_");
   const allowed = ["1_month","3_months","6_months","1_year","2_years","3_years","other"];
-  // Common variations
   if (s.includes("1_month") || s === "1_month" || s === "1_month_lease") return "1_month";
   if (s.includes("6_month")) return "6_months";
   if (s.includes("3_month")) return "3_months";
@@ -86,15 +85,16 @@ export async function commitImport(input: {
   let skipped = 0;
   let failed = 0;
 
-  const { data: properties } = await admin.from("property").select("id, name, address");
-  const { data: units } = await admin.from("unit").select("id, property_id, unit_number");
-  const { data: tenants } = await admin.from("tenant").select("id, email, full_name");
+  const { data: properties } = await admin.schema("core").from("property").select("id, name, address");
+  const { data: units } = await admin.schema("core").from("unit").select("id, property_id, unit_number");
+  const { data: tenants } = await admin.schema("core").from("tenant").select("id, email, full_name");
 
-  const propByName = new Map<string, string>((properties ?? []).map((p: any) => [String(p.name).toLowerCase(), String(p.id)]));
-  const propAddressById = new Map(
-    (properties ?? []).map((p: any) => [p.id, p.address])
+  const propByName = new Map<string, string>(
+    (properties ?? []).map((p: any) => [String(p.name).toLowerCase(), String(p.id)])
   );
-  const unitByKey = new Map<string, string>((units ?? []).map((u: any) => [u.property_id + "|" + u.unit_number, String(u.id)]));
+  const unitByKey = new Map<string, string>(
+    (units ?? []).map((u: any) => [u.property_id + "|" + u.unit_number, String(u.id)])
+  );
   const tenantByEmail = new Map<string, string>(
     (tenants ?? [])
       .filter((t: any) => t.email)
@@ -127,13 +127,13 @@ export async function commitImport(input: {
         if (row.willSkip && input.updateDuplicates) {
           const existingId = propByName.get(name.toLowerCase());
           if (existingId) {
-            const { error } = await admin.from("property").update(payload).eq("id", existingId);
+            const { error } = await admin.schema("core").from("property").update(payload).eq("id", existingId);
             if (error) throw error;
             updated++;
             continue;
           }
         }
-        const { error } = await admin.from("property").insert(payload);
+        const { error } = await admin.schema("core").from("property").insert(payload);
         if (error) throw error;
         created++;
       }
@@ -157,13 +157,13 @@ export async function commitImport(input: {
         if (row.willSkip && input.updateDuplicates) {
           const existingId = unitByKey.get(propId + "|" + unitNo);
           if (existingId) {
-            const { error } = await admin.from("unit").update(payload).eq("id", existingId);
+            const { error } = await admin.schema("core").from("unit").update(payload).eq("id", existingId);
             if (error) throw error;
             updated++;
             continue;
           }
         }
-        const { error } = await admin.from("unit").insert(payload);
+        const { error } = await admin.schema("core").from("unit").insert(payload);
         if (error) throw error;
         created++;
       }
@@ -185,14 +185,14 @@ export async function commitImport(input: {
         if (row.willSkip && input.updateDuplicates && email) {
           const existingId = tenantByEmail.get(email);
           if (existingId) {
-            const { error } = await admin.from("tenant").update(payload).eq("id", existingId);
+            const { error } = await admin.schema("core").from("tenant").update(payload).eq("id", existingId);
             if (error) throw error;
             tenantId = existingId;
             updated++;
           }
         } else {
           const { data: inserted, error } = await admin
-            .from("tenant").insert(payload).select("id").single();
+            .schema("core").from("tenant").insert(payload).select("id").single();
           if (error) throw error;
           tenantId = inserted.id;
           created++;
@@ -210,7 +210,7 @@ export async function commitImport(input: {
           if (propId) {
             const unitId = unitByKey.get(propId + "|" + unitNo);
             if (unitId) {
-              const { error: leaseErr } = await admin.from("lease").insert({
+              const { error: leaseErr } = await admin.schema("core").from("lease").insert({
                 unit_id: unitId,
                 tenant_id: tenantId,
                 start_date: moveIn,
@@ -247,21 +247,16 @@ export async function commitImport(input: {
         let tenantId: string | undefined;
         if (email) tenantId = tenantByEmail.get(email);
         if (!tenantId && fullName) {
-  const resolvedTenant = tenantByName.get(fullName.toLowerCase());
-  if (typeof resolvedTenant === "string") tenantId = resolvedTenant;
-}
-        if (!tenantId) {
-          throw new Error(
-            "Tenant not found: " + (email || fullName)
-          );
+          const resolvedTenant = tenantByName.get(fullName.toLowerCase());
+          if (typeof resolvedTenant === "string") tenantId = resolvedTenant;
         }
-
-        const address = clean(row.mapped.address) || propAddressById.get(propId) || null;
+        if (!tenantId) {
+          throw new Error("Tenant not found: " + (email || fullName));
+        }
 
         const payload: Record<string, unknown> = {
           unit_id: unitId,
           tenant_id: tenantId,
-          address,
           term: normalizeTerm(row.mapped.term),
           intent: normalizeIntent(row.mapped.intent),
           start_date: parseDate(row.mapped.start_date),
@@ -282,12 +277,17 @@ export async function commitImport(input: {
           throw new Error("Start date and end date are required");
         }
 
-        const { error } = await admin.from("lease").insert(payload);
+        const { error } = await admin.schema("core").from("lease").insert(payload);
         if (error) throw error;
         created++;
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message =
+        err instanceof Error
+          ? err.message
+          : err && typeof err === "object" && "message" in err
+          ? String((err as { message: unknown }).message)
+          : String(err);
       errors.push({ rowIndex: row.index, message });
       failed++;
     }

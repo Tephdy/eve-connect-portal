@@ -13,6 +13,8 @@ export type Lease = {
   due_date: string | null;
   intent: "new" | "renew" | "extend" | null;
   term: string | null;
+  term_months: number | null;
+  term_label: string | null;
   monthly_rent: number;
   deposit_amount: number;
   deposit_1: number | null;
@@ -31,12 +33,9 @@ export type Lease = {
   property_name?: string;
 };
 
-// Must be a SINGLE literal string so Supabase can infer row shape.
 const LEASE_SELECT =
   "id, unit_id, tenant_id, start_date, end_date, monthly_rent, deposit_amount, notice_period_days, status, created_at, due_date, deposit_1, deposit_2, move_in_date, intent, ad_ons, ad_ons_amount, term, unit_number, tenant_name";
 
-// Writes go to core.lease (base table) — this select is only used for
-// the returned row after insert/update, so it can exclude joined columns.
 const LEASE_WRITE_SELECT =
   "id, unit_id, tenant_id, start_date, end_date, monthly_rent, deposit_amount, notice_period_days, status, created_at, due_date, deposit_1, deposit_2, move_in_date, intent, ad_ons, ad_ons_amount, term";
 
@@ -65,6 +64,8 @@ export async function createLease(
       due_date: input.due_date || null,
       intent: input.intent ?? "new",
       term: input.term ?? null,
+      term_months: input.term_months ?? null,
+      term_label: input.term_label || null,
       monthly_rent: input.monthly_rent,
       deposit_amount: input.deposit_amount ?? 0,
       deposit_1: input.deposit_1 ?? 0,
@@ -99,6 +100,8 @@ export async function updateLease(id: string, input: LeaseUpdateInput): Promise<
   if (input.due_date !== undefined) patch.due_date = input.due_date || null;
   if (input.intent !== undefined) patch.intent = input.intent;
   if (input.term !== undefined) patch.term = input.term;
+  if (input.term_months !== undefined) patch.term_months = input.term_months;
+  if (input.term_label !== undefined) patch.term_label = input.term_label || null;
   if (input.monthly_rent !== undefined) patch.monthly_rent = input.monthly_rent;
   if (input.deposit_amount !== undefined) patch.deposit_amount = input.deposit_amount;
   if (input.deposit_1 !== undefined) patch.deposit_1 = input.deposit_1;
@@ -139,6 +142,7 @@ export async function terminateLease(id: string): Promise<void> {
     throw new Error(error.message);
   }
 }
+
 export type LeaseFilter = {
   status?: "all" | "draft" | "active" | "expiring" | "ended" | "terminated";
   term?: string | "all";
@@ -166,7 +170,6 @@ export async function listLeases(
 
   let rows = (data ?? []) as unknown as Lease[];
 
-  // Property enrichment + filter (cross-schema safe: fetch, filter in JS)
   const unitIds = Array.from(new Set(rows.map((r) => r.unit_id).filter(Boolean)));
   if (unitIds.length > 0) {
     const { data: units } = await supabase

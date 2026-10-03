@@ -147,6 +147,11 @@ export function LeaseForm({
   });
   const [intent, setIntent] = useState<string>(lease?.intent ?? "new");
   const [term, setTerm] = useState<string>(lease?.term ?? "1_year");
+    const [termMonths, setTermMonths] = useState<string>(
+    lease?.term_months != null ? String(lease.term_months) : ""
+  );
+  const [termLabel, setTermLabel] = useState<string>(lease?.term_label ?? "");
+  
   const [startDate, setStartDate] = useState<string>(lease?.start_date ?? "");
   const [endDate, setEndDate] = useState<string>(lease?.end_date ?? "");
   const [moveInDate, setMoveInDate] = useState<string>(lease?.move_in_date ?? "");
@@ -189,13 +194,24 @@ export function LeaseForm({
   }, [propertyId, filteredUnits, unitId]);
 
   // Auto-fill end date when term or start date changes (unless "other")
+    // Auto-fill end date when term or start date changes
   useEffect(() => {
-    if (!startDate || !term || term === "other") return;
+    if (!startDate || !term) return;
+
+    // Custom: use the typed months
+    if (term === "other") {
+      const n = Number(termMonths);
+      if (!Number.isFinite(n) || n <= 0) return;
+      setEndDate(addMonths(startDate, n));
+      return;
+    }
+
+    // Preset: use the enum table
     const def = TERMS.find((t) => t.value === term);
     if (!def || def.months === 0) return;
     setEndDate(addMonths(startDate, def.months));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [term, startDate]);
+  }, [term, termMonths, startDate]);
 
   // ---------------------------------------------------------------------------
   // Autofill everything from the picked reservation
@@ -383,9 +399,38 @@ export function LeaseForm({
               value={term}
               onChange={(e) => setTerm(e.target.value)}
               error={fieldError("term")}
-              hint={term === "other" ? "Enter the end date manually" : "End date auto-calculated from start date"}
+              hint={
+                term === "other"
+                  ? "Enter the number of months below"
+                  : "End date auto-calculated from start date"
+              }
             />
           </div>
+
+          {term === "other" && (
+            <div className="grid grid-cols-2 gap-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 dark:border-amber-500/20">
+              <Input
+                name="term_months"
+                label="Number of months"
+                type="number"
+                min={1}
+                step={1}
+                value={termMonths}
+                onChange={(e) => setTermMonths(e.target.value)}
+                error={fieldError("term_months")}
+                hint="End date auto-calculated from start date + months"
+                required
+              />
+              <Input
+                name="term_label"
+                label="Custom term label (optional)"
+                value={termLabel}
+                onChange={(e) => setTermLabel(e.target.value)}
+                error={fieldError("term_label")}
+                hint='e.g. "9 months + 1 week"'
+              />
+            </div>
+          )}
 
           {/* ---- Dates ---- */}
           <div className="grid grid-cols-2 gap-4">

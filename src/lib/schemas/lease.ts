@@ -22,6 +22,8 @@ export const leaseCreateSchema = z.object({
   due_date: z.string().optional().or(z.literal("")),
   intent: z.enum(leaseIntents).default("new"),
   term: z.enum(leaseTerms).optional(),
+  term_months: z.coerce.number().int().min(0).optional(),
+  term_label: z.string().optional().or(z.literal("")),
   monthly_rent: z.coerce.number().min(0),
   deposit_1: z.coerce.number().min(0).default(0),
   deposit_1_due_date: z.string().optional().or(z.literal("")),
