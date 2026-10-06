@@ -53,13 +53,17 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
+    if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("next", pathname);
+    // Never set next to a login route — that creates a redirect loop.
+    if (!pathname.startsWith("/login") && !pathname.startsWith("/portal/login")) {
+      url.searchParams.set("next", pathname);
+    } else {
+      url.search = "";
+    }
     return NextResponse.redirect(url);
   }
-
   return response;
 }
 
