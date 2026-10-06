@@ -2,9 +2,6 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/get-session";
 import { getUserRoles } from "@/lib/auth/get-user-roles";
 import { PortalShell } from "@/components/portal/portal-shell";
-import { NotificationBanner } from "@/components/portal/notification-banner";
-import { getMyNotifications } from "@/lib/db/tenant-notifications";
-import { requireTenantSelf } from "@/lib/auth/require-tenant-self";
 
 export const dynamic = "force-dynamic";
 
@@ -19,13 +16,7 @@ export default async function PortalLayout({
   const roles = await getUserRoles();
   if (roles.length === 0) redirect("/portal/login");
 
-  const { tenant } = await requireTenantSelf();
-  const notifications = await getMyNotifications(tenant.id);
-
   return (
-    <PortalShell email={session.email ?? ""} notifications={notifications}>
-      <NotificationBanner notifications={notifications} />
-      {children}
-    </PortalShell>
+    <PortalShell email={session.email ?? ""}>{children}</PortalShell>
   );
 }

@@ -1,0 +1,269 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { requireTenantSelf } from "@/lib/auth/require-tenant-self";
+import { getMyLease } from "@/lib/db/tenant-portal";
+import { formatPHP } from "@/lib/utils/format-php";
+
+export const dynamic = "force-dynamic";
+
+const STATUS_LABEL: Record<string, string> = {
+  draft: "Draft",
+  active: "Active",
+  expiring: "Expiring soon",
+  ended: "Ended",
+  terminated: "Terminated",
+};
+
+export default async function PortalLeaseDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const { tenant } = await requireTenantSelf();
+
+  const detail = await getMyLease(id, tenant.id);
+  if (!detail) notFound();
+
+  const { lease, invoices, payments, deposits, contract, stats } = detail;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <Link
+          href="/portal/lease"
+          className="text-xs text-brand-600 hover:underline dark:text-brand-400"
+        >
+          &larr; All leases
+        </Link>
+        <h1 className="mt-2 text-lg font-semibold text-ink-900">
+          {lease.property_name ?? "Property"}{" "}
+          {lease.unit_number ? "| Unit " + lease.unit_number : ""}
+        </h1>
+        <p className="mt-1 text-sm text-ink-500">
+          {STATUS_LABEL[lease.status] ?? lease.status}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Stat label="Monthly rent" value={formatPHP(lease.monthly_rent)} />
+        <Stat label="Outstanding" value={formatPHP(stats.outstanding)} />
+        <Stat
+          label="Rent due on"
+          value={lease.due_date ? fmtDayOfMonth(lease.due_date) : "-"}
+        />
+        <Stat
+          label="Days remaining"
+          value={stats.days_remaining >= 0 ? String(stats.days_remaining) : "Expired"}
+        />
+      </div>
+
+      <Card title="Lease terms">
+        <Row label="Start date" value={fmtDate(lease.start_date)} />
+        <Row label="End date" value={fmtDate(lease.end_date)} />
+        <Row label="Move-in date" value={fmtDate(lease.move_in_date)} />
+        <Row label="Term" value={fmtTerm(lease.term, lease.term_months)} />
+        <Row label="Deposit" value={formatPHP(lease.deposit_amount)} />
+        {lease.deposit_1 != null && lease.deposit_1 > 0 && (
+          <Row label="1st deposit" value={formatPHP(lease.deposit_1)} />
+        )}
+        {lease.deposit_2 != null && lease.deposit_2 > 0 && (
+          <Row label="2nd deposit" value={formatPHP(lease.deposit_2)} />
+        )}
+        <Row
+          label="Notice period"
+          value={lease.notice_period_days + " days"}
+        />
+        {lease.property_address && (
+          <Row label="Address" value={lease.property_address} />
+        )}
+      </Card>
+
+      {contract && (
+        <Card title="Contract">
+          <Row
+            label="Status"
+            value={
+              contract.status === "signed"
+                ? "Signed on " + fmtDate(contract.signed_at)
+                : contract.status
+            }
+          />
+          {contract.template_name && (
+            <Row label="Template" value={contract.template_name} />
+          )}
+          {contract.signed_document_url && (
+            <div className="pt-2">
+              <a
+                href={contract.signed_document_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-brand-600 hover:underline dark:text-brand-400"
+              >
+                View signed contract &rarr;
+              </a>
+            </div>
+          )}
+        </Card>
+      )}
+
+      <Card title={"Invoices (" + invoices.length + ")"}>
+        {invoices.length === 0 ? (
+          <p className="text-sm text-ink-500">No invoices yet.</p>
+        ) : (
+          <div className="divide-y divide-ink-100 dark:divide-white/[0.04]">
+            {invoices.map((inv) => (
+              <div key={inv.id} className="flex items-center justify-between py-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-ink-900">
+                    {inv.display_number ?? "Invoice"}
+                  </p>
+                  <p className="text-xs text-ink-500">
+                    {fmtDate(inv.due_date)} &middot;{" "}
+                    <span className="capitalize">{inv.type}</span>
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-medium tabular-nums">
+                    {formatPHP(inv.amount)}
+                  </p>
+                  <span
+                    className={
+                      "text-xs capitalize " +
+                      (inv.status === "paid"
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : inv.status === "overdue"
+                        ? "text-danger-600 dark:text-danger-500"
+                        : "text-ink-500")
+                    }
+                  >
+                    {inv.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card title={"Payments (" + payments.length + ")"}>
+        {payments.length === 0 ? (
+          <p className="text-sm text-ink-500">No payments recorded.</p>
+        ) : (
+          <div className="divide-y divide-ink-100 dark:divide-white/[0.04]">
+            {payments.map((p) => (
+              <div key={p.id} className="flex items-center justify-between py-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-ink-900 tabular-nums">
+                    {formatPHP(p.amount)}
+                  </p>
+                  <p className="text-xs text-ink-500">
+                    {fmtDate(p.paid_at)} &middot;{" "}
+                    <span className="capitalize">{p.method}</span>
+                    {p.receipt_number ? " - " + p.receipt_number : ""}
+                  </p>
+                </div>
+                {p.invoice_display && (
+                  <p className="text-xs text-ink-500">{p.invoice_display}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {deposits.length > 0 && (
+        <Card title="Deposits">
+          <div className="divide-y divide-ink-100 dark:divide-white/[0.04]">
+            {deposits.map((d) => (
+              <div key={d.id} className="flex items-center justify-between py-2">
+                <p className="text-sm text-ink-700 capitalize">{d.status}</p>
+                <p className="text-sm font-medium tabular-nums">
+                  {formatPHP(d.amount)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <p className="text-center text-xs text-ink-400">
+        Need to ask a question? Message the property office through
+        Facebook Messenger.
+      </p>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-ink-200 bg-surface p-3 dark:border-white/[0.06]">
+      <p className="text-[10px] font-medium uppercase tracking-wide text-ink-400">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-semibold text-ink-900 tabular-nums">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function Card({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-ink-200 bg-surface dark:border-white/[0.06]">
+      <div className="border-b border-ink-200 px-4 py-2.5 dark:border-white/[0.06]">
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">
+          {title}
+        </p>
+      </div>
+      <div className="space-y-2 p-4">{children}</div>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-3 text-sm">
+      <span className="text-ink-500">{label}</span>
+      <span className="text-right font-medium text-ink-800">{value}</span>
+    </div>
+  );
+}
+
+function fmtDate(iso: string | null | undefined): string {
+  if (!iso) return "-";
+  return new Date(iso).toLocaleDateString("en-PH", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function fmtDayOfMonth(iso: string): string {
+  const d = new Date(iso);
+  const day = d.getDate();
+  const suffix =
+    day === 1 || day === 21 || day === 31
+      ? "st"
+      : day === 2 || day === 22
+      ? "nd"
+      : day === 3 || day === 23
+      ? "rd"
+      : "th";
+  return day + suffix + " of each month";
+}
+
+function fmtTerm(term: string | null, months: number | null): string {
+  if (!term) return "-";
+  if (term === "other") {
+    if (months && months > 0) return months + " month" + (months === 1 ? "" : "s");
+    return "Custom";
+  }
+  return term.replace(/_/g, " ");
+}

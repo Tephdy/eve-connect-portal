@@ -1,0 +1,89 @@
+import Link from "next/link";
+import { requireTenantSelf } from "@/lib/auth/require-tenant-self";
+import { listMyLeases } from "@/lib/db/tenant-portal";
+import { formatPHP } from "@/lib/utils/format-php";
+
+export const dynamic = "force-dynamic";
+
+const STATUS_LABEL: Record<string, string> = {
+  draft: "Draft",
+  active: "Active",
+  expiring: "Expiring soon",
+  ended: "Ended",
+  terminated: "Terminated",
+};
+
+const STATUS_TONE: Record<string, string> = {
+  draft: "bg-ink-500/10 text-ink-600",
+  active: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+  expiring: "bg-amber-500/10 text-amber-700 dark:text-amber-500",
+  ended: "bg-ink-500/10 text-ink-600",
+  terminated: "bg-danger-500/10 text-danger-700 dark:text-danger-500",
+};
+
+export default async function PortalLeaseListPage() {
+  const { tenant } = await requireTenantSelf();
+  const leases = await listMyLeases(tenant.id);
+
+  if (leases.length === 0) {
+    return (
+      <div className="rounded-xl border border-ink-200 bg-surface p-6 text-center dark:border-white/[0.06]">
+        <h1 className="text-base font-semibold text-ink-900">My lease</h1>
+        <p className="mt-2 text-sm text-ink-500">
+          You don't have any leases on record yet. Contact the management
+          office if this seems wrong.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-lg font-semibold text-ink-900">My lease</h1>
+        <p className="mt-1 text-sm text-ink-500">
+          {leases.length === 1
+            ? "Your lease agreement"
+            : leases.length + " leases on record"}
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        {leases.map((l) => (
+          <Link
+            key={l.id}
+            href={"/portal/lease/" + l.id}
+            className="block rounded-xl border border-ink-200 bg-surface p-4 transition-colors hover:border-brand-500 dark:border-white/[0.06]"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-ink-900">
+                  {l.property_name ?? "Property"}{" "}
+                  {l.unit_number ? "| Unit " + l.unit_number : ""}
+                </p>
+                <p className="mt-1 text-xs text-ink-500">
+                  {new Date(l.start_date).toLocaleDateString("en-PH")} to{" "}
+                  {new Date(l.end_date).toLocaleDateString("en-PH")}
+                </p>
+                <p className="mt-1.5 text-sm font-medium text-ink-800">
+                  {formatPHP(l.monthly_rent)}
+                  <span className="text-xs font-normal text-ink-500">
+                    {" "}/ month
+                  </span>
+                </p>
+              </div>
+              <span
+                className={
+                  "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide " +
+                  (STATUS_TONE[l.status] ?? "bg-ink-500/10 text-ink-600")
+                }
+              >
+                {STATUS_LABEL[l.status] ?? l.status}
+              </span>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
