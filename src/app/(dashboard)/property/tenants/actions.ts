@@ -51,7 +51,6 @@ export async function createTenantAction(
       const { createAdminClient } = await import("@/lib/supabase/admin");
       const admin = createAdminClient();
 
-      // Update invoices
       const { data: linkedInvoices } = await admin
         .schema("acct")
         .from("invoice")
@@ -67,7 +66,6 @@ export async function createTenantAction(
           .update({ tenant_id: tenant.id })
           .in("id", invoiceIds);
 
-        // Also stamp the payments on those invoices
         await admin
           .schema("acct")
           .from("payment")
@@ -103,8 +101,6 @@ export async function updateTenantAction(
   const session = await getSession();
   const updated = await updateTenant(id, parsed.data);
 
-  // markTenantActivePropagation: when status flips to "active",
-  // mark the reservation's unit as occupied and the inquiry as converted.
   if (parsed.data.status === "active") {
     await markTenantActivePropagation(updated, session?.id ?? null);
   }
@@ -131,6 +127,33 @@ export async function createTenantInviteAction(
     await assertPermission("tenant:update");
   } catch {
     return { ok: false, error: "Forbidden: missing tenant:update" };
+  }
+
+  // Resolve the base URL up-front. If NEXT_PUBLIC_SITE_URL isn't set we
+  // refuse to create the invite — a localhost link sent to a tenant is
+  // worse than a loud error.
+  const rawBase = process.env.NEXT_PUBLIC_SITE_URL;
+  if (!rawBase || !rawBase.trim()) {
+    return {
+      ok: false,
+      error:
+        "NEXT_PUBLIC_SITE_URL is not configured. Set it in the environment " +
+        "before generating invite links.",
+    };
+  }
+  const baseUrl = rawBase.replace(/\/$/, "");
+
+  // Sanity check: in production, the base URL must not be localhost.
+  if (
+    process.env.NODE_ENV === "production" &&
+    /localhost|127\.0\.0\.1/.test(baseUrl)
+  ) {
+    return {
+      ok: false,
+      error:
+        "NEXT_PUBLIC_SITE_URL points at localhost in a production build. " +
+        "Set it to your public domain and redeploy.",
+    };
   }
 
   const session = await getSession();
@@ -164,12 +187,7 @@ export async function createTenantInviteAction(
       created_by: session?.id ?? null,
     });
 
-    const baseUrl =
-      process.env.NEXT_PUBLIC_SITE_URL ??
-      process.env.NEXT_PUBLIC_APP_URL ??
-      "http://localhost:3000";
-    const invite_url =
-      baseUrl.replace(/\/$/, "") + "/portal/accept-invite?token=" + rawToken;
+    const invite_url = baseUrl + "/portal/accept-invite?token=" + rawToken;
 
     await logAudit({
       actor_id: session?.id ?? null,
@@ -252,7 +270,6 @@ async function markTenantActivePropagation(
     }
   }
 
-  // Revalidate the pages that care
   revalidatePath("/property/units");
   revalidatePath("/marketing/inquiries");
   revalidatePath("/marketing/forecast");
