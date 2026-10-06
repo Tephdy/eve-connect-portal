@@ -92,3 +92,46 @@ export async function assertTenantSelf(): Promise<{
     tenant: tenant as SelfTenant,
   };
 }
+
+
+// ---- GET TENANT SELF OR NULL (added by apply-chunk-7) ----
+
+/**
+ * Non-redirecting variant. Returns null if the caller isn't a linked tenant.
+ * Use this in layouts where a redirect would loop back into the same layout.
+ */
+export async function getTenantSelfOrNull(): Promise<{
+  session: { id: string; email: string | null };
+  tenant: SelfTenant;
+} | null> {
+  const session = await getSession();
+  if (!session) return null;
+
+  const admin = createAdminClient();
+
+  const { data: link } = await admin
+    .schema("core")
+    .from("tenant_user")
+    .select("tenant_id")
+    .eq("auth_user_id", session.id)
+    .eq("relationship", "self")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (!link) return null;
+
+  const { data: tenant } = await admin
+    .schema("core")
+    .from("tenant")
+    .select("id, full_name, email, phone, messenger_name, status")
+    .eq("id", (link as { tenant_id: string }).tenant_id)
+    .maybeSingle();
+
+  if (!tenant) return null;
+
+  return {
+    session: { id: session.id, email: session.email ?? null },
+    tenant: tenant as SelfTenant,
+  };
+}

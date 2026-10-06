@@ -49,3 +49,46 @@ export async function requireTenantSelf(): Promise<{
     tenant: tenant as SelfTenant,
   };
 }
+
+
+// ---- ASSERT TENANT SELF (added by apply-chunk-5) ----
+
+/**
+ * Non-redirecting variant for use in server actions.
+ * Throws if the caller isn't a linked tenant.
+ */
+export async function assertTenantSelf(): Promise<{
+  session: { id: string; email: string | null };
+  tenant: SelfTenant;
+}> {
+  const session = await getSession();
+  if (!session) throw new Error("Not authenticated");
+
+  const admin = createAdminClient();
+
+  const { data: link } = await admin
+    .schema("core")
+    .from("tenant_user")
+    .select("tenant_id")
+    .eq("auth_user_id", session.id)
+    .eq("relationship", "self")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (!link) throw new Error("Account not linked to any tenant");
+
+  const { data: tenant } = await admin
+    .schema("core")
+    .from("tenant")
+    .select("id, full_name, email, phone, messenger_name, status")
+    .eq("id", (link as { tenant_id: string }).tenant_id)
+    .maybeSingle();
+
+  if (!tenant) throw new Error("Tenant record not found");
+
+  return {
+    session: { id: session.id, email: session.email ?? null },
+    tenant: tenant as SelfTenant,
+  };
+}
