@@ -66,7 +66,7 @@ export default async function TermsPage() {
   const html = renderMarkdown(md);
 
   return (
-    <div className="min-h-screen bg-ink-50/60 dark:bg-[#0a0b0f]">
+    <div className="h-screen overflow-y-auto bg-ink-50/60 dark:bg-[#0a0b0f]">
       <div className="mx-auto max-w-3xl px-4 py-10">
         <Link
           href="/portal/login"
