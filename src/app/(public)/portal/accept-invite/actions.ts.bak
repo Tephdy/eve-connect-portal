@@ -11,7 +11,6 @@ export async function acceptInviteAction(input: {
   token: string;
   email: string;
   password: string;
-  agreed_terms_version: string;
 }): Promise<ActionResult<{ email: string }>> {
   if (!isPlausibleToken(input.token)) {
     return { ok: false, error: "Invalid invite link" };
@@ -120,8 +119,6 @@ export async function acceptInviteAction(input: {
       tenant_id: invite.tenant_id,
       relationship: "self",
       verified_at: new Date().toISOString(),
-      terms_version_agreed: input.agreed_terms_version,
-      terms_agreed_at: new Date().toISOString(),
     });
 
   if (linkErr) {
