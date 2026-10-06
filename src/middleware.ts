@@ -3,7 +3,15 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
-const PUBLIC_PATHS = ["/login", "/auth/callback", "/_next", "/api/cron"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/auth/callback",
+  "/_next",
+  "/api/cron",
+  "/portal/accept-invite",
+  "/portal/login",
+  "/portal/logout",
+];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

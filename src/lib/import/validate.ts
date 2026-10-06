@@ -36,6 +36,24 @@ function parseDate(v: string): string | null {
   return null;
 }
 
+// DD/MM/YYYY parser (locale-specific to this importer's sheets).
+// Falls back to the generic parseDate if the value doesn't match.
+function parseDateDDMMYYYY(v: string): string | null {
+  if (!v) return null;
+  const t = v.trim();
+  const m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) {
+    const [, dd, mm, yyyy] = m;
+    const d = Number(dd);
+    const mo = Number(mm);
+    if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12) {
+      return yyyy + "-" + mm.padStart(2, "0") + "-" + dd.padStart(2, "0");
+    }
+    return null;
+  }
+  return parseDate(v);
+}
+
 export async function validateImport(input: {
   target: TargetTable;
   mapping: ColumnMapping;
@@ -138,7 +156,6 @@ export async function validateImport(input: {
       const fullName = mapped.full_name;
       const email = mapped.email;
 
-      // Property must exist
       let propId: string | undefined;
       if (propName) {
         propId = propByName.get(propName.toLowerCase());
@@ -151,7 +168,6 @@ export async function validateImport(input: {
         }
       }
 
-      // Unit must exist in that property
       if (propId && unitNo) {
         if (!unitByKey.has(propId + "|" + unitNo)) {
           errors.push({
@@ -162,7 +178,6 @@ export async function validateImport(input: {
         }
       }
 
-      // Tenant must exist - match by email first, then by name
       if (fullName || email) {
         const matchedByName = fullName ? tenantByName.get(fullName.toLowerCase()) : undefined;
         const matchedByEmail = email ? tenantByEmail.get(email.toLowerCase()) : undefined;
@@ -181,6 +196,46 @@ export async function validateImport(input: {
       }
     }
 
+    // ---- Invoices ----
+    if (input.target === "invoices") {
+      const propName = mapped.property_name;
+      const unitNo = mapped.unit_number;
+      const fullName = mapped.full_name;
+
+      let propId: string | undefined;
+      if (propName) {
+        propId = propByName.get(propName.toLowerCase());
+        if (!propId) {
+          errors.push({
+            rowIndex: index,
+            field: "property_name",
+            message: 'Property "' + propName + '" not found',
+          });
+        }
+      }
+
+      if (propId && unitNo) {
+        if (!unitByKey.has(propId + "|" + unitNo)) {
+          errors.push({
+            rowIndex: index,
+            field: "unit_number",
+            message: "Unit " + unitNo + " not found in " + propName,
+          });
+        }
+      }
+
+      if (fullName) {
+        const matchedByName = tenantByName.get(fullName.toLowerCase());
+        if (!matchedByName) {
+          errors.push({
+            rowIndex: index,
+            field: "full_name",
+            message: 'No tenant found matching name "' + fullName + '"',
+          });
+        }
+      }
+    }
+
     // Type checks
     for (const field of def.fields) {
       if (field.type === "number" && mapped[field.key]) {
@@ -193,7 +248,11 @@ export async function validateImport(input: {
         }
       }
       if (field.type === "date" && mapped[field.key]) {
-        if (parseDate(mapped[field.key]!) === null) {
+        const parser =
+          input.target === "invoices" && field.key === "due_date"
+            ? parseDateDDMMYYYY
+            : parseDate;
+        if (parser(mapped[field.key]!) === null) {
           errors.push({
             rowIndex: index,
             field: field.key,

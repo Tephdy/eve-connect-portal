@@ -43,7 +43,7 @@ export async function getCalendarMonth(
   const shouldInclude = (t: CalendarEvent["type"]) => !types || types.has(t);
 
   // ---- Leases ----
-  const { data: leaseRows, error: leaseErr } = await supabase
+  const { data: leaseRows } = await supabase
     .from("lease")
     .select(
       "id, unit_id, tenant_id, start_date, end_date, due_date, monthly_rent, status, unit_number, tenant_name"
@@ -139,26 +139,44 @@ export async function getCalendarMonth(
     eventsByDate[date].push(evt);
   }
 
+  // ---- rent_due ---- (once per active lease per month, on the due day)
   if (shouldInclude("rent_due")) {
     for (const l of filteredLeases) {
-      if (!l.due_date) continue;
       if (l.status !== "active" && l.status !== "expiring") continue;
-      const dueDay = Number(l.due_date.slice(8, 10));
-      if (!dueDay) continue;
 
-      const leaseStart = new Date(l.start_date);
-      const leaseEnd = new Date(l.end_date);
+      const startDate = new Date(l.start_date);
+      if (isNaN(startDate.getTime())) continue;
+
+      // Anchor day-of-month: prefer lease.due_date, fall back to start_date.
+      let dueDay = startDate.getDate();
+      if (l.due_date) {
+        const dd = new Date(l.due_date);
+        if (!isNaN(dd.getTime())) dueDay = dd.getDate();
+      }
+
+      const leaseStartStr = l.start_date;
+      const leaseEndStr = l.end_date;
       const monthStart = new Date(year, month - 1, 1);
       const monthEnd = new Date(year, month, 0);
-      if (monthEnd < leaseStart || monthStart > leaseEnd) continue;
+
+      // Skip months entirely outside the lease term
+      if (ymd(monthEnd) < leaseStartStr) continue;
+      if (ymd(monthStart) > leaseEndStr) continue;
 
       const day = clampDay(year, month, dueDay);
+
+      // Skip if the clamped day falls outside the lease term
+      if (day < leaseStartStr || day > leaseEndStr) continue;
+
+      // Skip if the day falls outside the visible calendar window
+      if (day < startStr || day > endStr) continue;
+
       const info = unitLookup.get(l.unit_id);
       push(day, {
         id: "rent_" + l.id + "_" + day,
         date: day,
         type: "rent_due",
-        title: "Rent due -” " + (l.tenant_name ?? "Tenant"),
+        title: "Rent due - " + (l.tenant_name ?? "Tenant"),
         subtitle: info?.unit_number ? "Unit " + info.unit_number : undefined,
         amount: Number(l.monthly_rent ?? 0),
         href: "/property/leases/" + l.id,
@@ -182,7 +200,7 @@ export async function getCalendarMonth(
         type: "invoice_due",
         title:
           (inv.display_number ?? "Invoice") +
-          " -” " +
+          " - " +
           (inv.type === "rent"
             ? "Rent"
             : inv.type === "deposit"
@@ -192,7 +210,7 @@ export async function getCalendarMonth(
             : "Other"),
         subtitle: l
           ? (l.tenant_name ?? "") +
-            (info?.unit_number ? " Â· Unit " + info.unit_number : "")
+            (info?.unit_number ? " | Unit " + info.unit_number : "")
           : undefined,
         amount: Number(inv.amount ?? 0),
         status: inv.status,
@@ -212,7 +230,7 @@ export async function getCalendarMonth(
         id: "start_" + l.id,
         date: l.start_date,
         type: "lease_starting",
-        title: "Lease starts -” " + (l.tenant_name ?? "Tenant"),
+        title: "Lease starts - " + (l.tenant_name ?? "Tenant"),
         subtitle: info?.unit_number ? "Unit " + info.unit_number : undefined,
         amount: Number(l.monthly_rent ?? 0),
         href: "/property/leases/" + l.id,
@@ -223,7 +241,7 @@ export async function getCalendarMonth(
     }
   }
 
-    // ---- notice_due ---- (monthly, from lease start + 20 days)
+  // ---- notice_due ---- (monthly, from lease start + 20 days)
   if (shouldInclude("notice_due")) {
     for (const l of filteredLeases) {
       if (l.status !== "active" && l.status !== "expiring") continue;
@@ -258,11 +276,11 @@ export async function getCalendarMonth(
             id: "notice_" + l.id + "_" + ym,
             date: noticeStr,
             type: "notice_due",
-            title: "Notice due -” " + (l.tenant_name ?? "Tenant"),
+            title: "Notice due - " + (l.tenant_name ?? "Tenant"),
             subtitle:
               "Lease ends " +
               l.end_date +
-              (info?.unit_number ? " Â· Unit " + info.unit_number : ""),
+              (info?.unit_number ? " | Unit " + info.unit_number : ""),
             href: "/property/leases/" + l.id,
             source_id: l.id,
             property_id: info?.property_id,
@@ -285,6 +303,7 @@ export async function getCalendarMonth(
       }
     }
   }
+
   // ---- lease_ending ----
   if (shouldInclude("lease_ending")) {
     for (const l of filteredLeases) {
@@ -298,7 +317,7 @@ export async function getCalendarMonth(
         id: "end_" + l.id,
         date: l.end_date,
         type: "lease_ending",
-        title: "Lease ends -” " + (l.tenant_name ?? "Tenant"),
+        title: "Lease ends - " + (l.tenant_name ?? "Tenant"),
         subtitle: info?.unit_number ? "Unit " + info.unit_number : undefined,
         href: "/property/leases/" + l.id,
         source_id: l.id,
@@ -323,7 +342,7 @@ export async function getCalendarMonth(
         title:
           "Payment " +
           (p.receipt_number ?? "") +
-          (l?.tenant_name ? " -” " + l.tenant_name : ""),
+          (l?.tenant_name ? " - " + l.tenant_name : ""),
         subtitle: inv?.display_number ? "Invoice " + inv.display_number : undefined,
         amount: Number(p.amount ?? 0),
         href: "/accounting/payments/" + p.id + "/receipt",
@@ -411,8 +430,8 @@ export async function getExpiringSoon(days = 30, property_id?: string | null) {
       id: l.id,
       end_date: l.end_date,
       days_left: daysLeft,
-      tenant_name: l.tenant_name ?? "-”",
-      unit_number: u?.unit_number ?? "-”",
+      tenant_name: l.tenant_name ?? "-",
+      unit_number: u?.unit_number ?? "-",
       property_id: u?.property_id as string | undefined,
     };
   });

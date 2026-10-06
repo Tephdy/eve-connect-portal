@@ -9,6 +9,21 @@ import type {
   TargetTable,
 } from "./types";
 
+const INVOICE_TYPE_MAP: Record<string, string> = {
+  "rent": "rent",
+  "deposit": "deposit",
+  "penalty": "penalty",
+  "add-ons": "add-ons",
+  "addons": "add-ons",
+  "add ons": "add-ons",
+  "electric": "electricity",
+  "electricity": "electricity",
+  "water": "water",
+  "gas": "gas",
+  "utility": "utility",
+  "other": "other",
+};
+
 function clean(v: string | null | undefined): string {
   return (v ?? "").trim();
 }
@@ -35,6 +50,23 @@ function parseDate(v: string | null): string | null {
   const d = new Date(v);
   if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10);
   return null;
+}
+
+// DD/MM/YYYY — used only for invoices (sheet format is DD/MM/YYYY).
+function parseDateDDMMYYYY(v: string | null): string | null {
+  if (!v) return null;
+  const t = v.trim();
+  const m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) {
+    const [, dd, mm, yyyy] = m;
+    const d = Number(dd);
+    const mo = Number(mm);
+    if (d >= 1 && d <= 31 && mo >= 1 && mo <= 12) {
+      return yyyy + "-" + mm.padStart(2, "0") + "-" + dd.padStart(2, "0");
+    }
+    return null;
+  }
+  return parseDate(v);
 }
 
 function parseAdOns(raw: string | null): unknown[] {
@@ -198,7 +230,6 @@ export async function commitImport(input: {
           created++;
         }
 
-        // Optional lease creation from tenant row
         const propName = clean(row.mapped.property_name);
         const unitNo = clean(row.mapped.unit_number);
         const moveIn = parseDate(row.mapped.move_in_date);
@@ -243,7 +274,6 @@ export async function commitImport(input: {
         const unitId = unitByKey.get(propId + "|" + unitNo);
         if (!unitId) throw new Error("Unit " + unitNo + " not found in " + propName);
 
-        // Tenant lookup: email first, then name
         let tenantId: string | undefined;
         if (email) tenantId = tenantByEmail.get(email);
         if (!tenantId && fullName) {
@@ -272,12 +302,82 @@ export async function commitImport(input: {
           status: "active",
         };
 
-        // Validate dates
         if (!payload.start_date || !payload.end_date) {
           throw new Error("Start date and end date are required");
         }
 
         const { error } = await admin.schema("core").from("lease").insert(payload);
+        if (error) throw error;
+        created++;
+      }
+
+      else if (input.target === "invoices") {
+        const propName = clean(row.mapped.property_name);
+        const unitNo = clean(row.mapped.unit_number);
+        const fullName = clean(row.mapped.full_name);
+
+        const propId = propByName.get(propName.toLowerCase());
+        if (!propId) throw new Error("Property not found: " + propName);
+
+        const unitId = unitByKey.get(propId + "|" + unitNo);
+        if (!unitId) throw new Error("Unit " + unitNo + " not found in " + propName);
+
+        const tenantId = tenantByName.get(fullName.toLowerCase());
+        if (!tenantId) throw new Error("Tenant not found: " + fullName);
+
+        // Find the lease on this unit for this tenant (most recent)
+        const { data: lease } = await admin
+          .schema("core")
+          .from("lease")
+          .select("id")
+          .eq("unit_id", unitId)
+          .eq("tenant_id", tenantId)
+          .order("start_date", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!lease) {
+          throw new Error(
+            "No lease found for " + fullName + " in unit " + unitNo
+          );
+        }
+
+        const rawType = clean(row.mapped.type).toLowerCase();
+        const invoiceType = INVOICE_TYPE_MAP[rawType] ?? "other";
+
+        const amount = parseNum(row.mapped.amount);
+        if (amount === null) throw new Error("Invalid amount");
+
+        const dueDate = parseDateDDMMYYYY(row.mapped.due_date);
+        if (!dueDate) throw new Error("Invalid due date (expected DD/MM/YYYY)");
+
+        // Duplicate check: same lease + due_date + type already exists?
+        const { data: existing } = await admin
+          .schema("acct")
+          .from("invoice")
+          .select("id")
+          .eq("lease_id", (lease as { id: string }).id)
+          .eq("due_date", dueDate)
+          .eq("type", invoiceType)
+          .maybeSingle();
+
+        if (existing) {
+          skipped++;
+          continue;
+        }
+
+        const { error } = await admin
+          .schema("acct")
+          .from("invoice")
+          .insert({
+            lease_id: (lease as { id: string }).id,
+            tenant_id: tenantId,
+            type: invoiceType,
+            amount,
+            due_date: dueDate,
+            status: "unpaid",
+          });
+
         if (error) throw error;
         created++;
       }

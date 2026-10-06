@@ -92,6 +92,23 @@ export const TARGETS: {
       { key: "notice_period_days", label: "Notice period", required: false, type: "number", aliases: ["notice period", "notice", "notice days", "notice period (days)"] },
     ],
   },
+  {
+    key: "invoices",
+    label: "Invoices",
+    description: "One row per invoice. Lease matched by property + unit + tenant name.",
+    permission: "invoice:create",
+    fields: [
+      { key: "property_name", label: "Property", required: true, type: "text", aliases: ["property", "property name", "building"] },
+      { key: "unit_number", label: "Unit", required: true, type: "text", aliases: ["unit", "unit no", "unit number", "unit #"] },
+      { key: "full_name", label: "Tenant name", required: true, type: "text", aliases: ["tenant", "tenant name", "full name", "name"] },
+      { key: "type", label: "Type", required: true, type: "enum",
+        enumValues: ["rent","deposit","penalty","add-ons","electric","water","other"],
+        aliases: ["type","invoice type","category"],
+        hint: "Rent, Deposit, Penalty, Add-ons, Electric, Water" },
+      { key: "amount", label: "Amount", required: true, type: "number", aliases: ["amount", "amount due", "total", "php", "amount (php)"] },
+      { key: "due_date", label: "Due date", required: true, type: "date", aliases: ["due", "due date", "invoice date", "date"], hint: "DD/MM/YYYY" },
+    ],
+  },
 ];
 
 export function getTarget(key: TargetTable) {

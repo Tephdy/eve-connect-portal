@@ -52,9 +52,14 @@ export default async function InvoicesPage({
         title="Invoices"
         description="All invoices with status filters."
         action={
-          <Link href="/accounting/invoices/new">
-            <Button>+ New Invoice</Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/property/import">
+              <Button variant="secondary">Import</Button>
+            </Link>
+            <Link href="/accounting/invoices/new">
+              <Button>+ New Invoice</Button>
+            </Link>
+          </div>
         }
       />
 
@@ -95,9 +100,14 @@ export default async function InvoicesPage({
           title="No invoices"
           description="No invoices match your filters, or none exist yet."
           action={
-            <Link href="/accounting/invoices/new">
-              <Button>+ New Invoice</Button>
-            </Link>
+            <div className="flex gap-2">
+              <Link href="/property/import">
+                <Button variant="secondary">Import</Button>
+              </Link>
+              <Link href="/accounting/invoices/new">
+                <Button>+ New Invoice</Button>
+              </Link>
+            </div>
           }
         />
       ) : (

@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, DoorOpen, Users, FileText } from "lucide-react";
+import { Building2, DoorOpen, Users, FileText, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { TARGETS } from "@/lib/import/field-defs";
 import type { TargetTable } from "@/lib/import/types";
@@ -10,6 +10,7 @@ const ICONS: Record<TargetTable, React.ComponentType<{ className?: string }>> = 
   units: DoorOpen,
   tenants: Users,
   leases: FileText,
+  invoices: Receipt,
 };
 
 export function TargetPicker({
@@ -20,7 +21,7 @@ export function TargetPicker({
   onChange: (v: TargetTable) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
       {TARGETS.map((t) => {
         const Icon = ICONS[t.key];
         const active = value === t.key;
