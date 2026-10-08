@@ -65,30 +65,12 @@ export async function middleware(request: NextRequest) {
 
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
-  // Public paths: don't force a session check, but still resolve the user
-  // so we can bounce a logged-in tenant off /portal/login.
+  // Public paths: skip the auth dance entirely. The login pages
+  // (/login, /portal/login) already handle "logged in? redirect" server-side
+  // with their own role check. Doing it here caused a redirect loop when a
+  // stale token triggered Supabase's internal refresh, which emitted its own
+  // redirect on every request.
   if (isPublic) {
-    if (pathname.startsWith("/portal/login") || pathname === "/login") {
-      let user = null;
-      try {
-        const { data } = await supabase.auth.getUser();
-        user = data.user;
-      } catch {
-        user = null;
-      }
-      if (user) {
-        // Who are they? Tenant -> /portal. Staff -> /dashboard.
-        const { data: roles } = await supabase
-          .from("user_role")
-          .select("role_key")
-          .eq("user_id", user.id);
-        const isTenant =
-          Array.isArray(roles) &&
-          roles.some((r: any) => r.role_key === "tenant");
-        const target = isTenant ? "/portal" : "/dashboard";
-        return NextResponse.redirect(new URL(target, request.url));
-      }
-    }
     return response;
   }
 
@@ -110,7 +92,7 @@ export async function middleware(request: NextRequest) {
     user = null;
   }
 
-  // Not logged in -> /login with next param
+  // Not logged in -> /login with next param, and wipe stale cookies.
   if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -121,17 +103,14 @@ export async function middleware(request: NextRequest) {
     }
     const redirect = NextResponse.redirect(url);
     for (const cookie of request.cookies.getAll()) {
-      if (
-        cookie.name.startsWith("sb-") &&
-        cookie.name.includes("auth-token")
-      ) {
+      if (cookie.name.startsWith("sb-")) {
         redirect.cookies.delete(cookie.name);
       }
     }
     return redirect;
   }
 
-  // Logged in: fetch roles
+  // Logged in: fetch roles from the security_invoker view.
   const { data: roles } = await supabase
     .from("user_role")
     .select("role_key")
