@@ -1,13 +1,19 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/get-session";
+import { getUserRoleKeys } from "@/lib/auth/get-user-roles-server";
 import { PortalLoginForm } from "./portal-login-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function PortalLoginPage() {
-  // getSession() is hardened to return null on stale tokens rather than throwing.
   const session = await getSession();
-  if (session) redirect("/portal");
+
+  // If already logged in: route by role so staff don't see the tenant login.
+  if (session) {
+    const roles = await getUserRoleKeys();
+    const isTenant = roles.includes("tenant");
+    redirect(isTenant ? "/portal" : "/dashboard");
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface p-6">

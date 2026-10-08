@@ -31,8 +31,8 @@ export function PortalLoginForm() {
         return;
       }
       toast.push("Welcome back", "success");
-      // Full-page nav so /auth/post-login can route by role.
-      window.location.href = "/auth/post-login";
+      router.push("/portal");
+      router.refresh();
     });
   };
 

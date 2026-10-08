@@ -11,6 +11,8 @@ const PUBLIC_PATHS = [
   "/portal/accept-invite",
   "/portal/login",
   "/portal/logout",
+  "/portal/terms",
+  "/portal/privacy",
 ];
 
 export async function middleware(request: NextRequest) {
@@ -51,24 +53,55 @@ export async function middleware(request: NextRequest) {
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
   if (isPublic) return response;
 
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch (err) {
+    if (
+      err &&
+      typeof err === "object" &&
+      "code" in err &&
+      (err as { code: string }).code === "refresh_token_not_found"
+    ) {
+      // Expected - swallow.
+    } else {
+      console.error("[middleware] getUser failed:", err);
+    }
+    user = null;
+  }
 
-    if (!user) {
+  if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    // Never set next to a login route — that creates a redirect loop.
-    if (!pathname.startsWith("/login") && !pathname.startsWith("/portal/login")) {
+    if (
+      !pathname.startsWith("/login") &&
+      !pathname.startsWith("/portal/login")
+    ) {
       url.searchParams.set("next", pathname);
     } else {
       url.search = "";
     }
-    return NextResponse.redirect(url);
+
+    const redirect = NextResponse.redirect(url);
+
+    for (const cookie of request.cookies.getAll()) {
+      if (
+        cookie.name.startsWith("sb-") &&
+        cookie.name.includes("auth-token")
+      ) {
+        redirect.cookies.delete(cookie.name);
+      }
+    }
+
+    return redirect;
   }
+
   return response;
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)",
   ],
 };

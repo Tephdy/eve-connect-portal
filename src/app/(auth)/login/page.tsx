@@ -78,8 +78,9 @@ function LoginForm() {
       return;
     }
 
-    router.replace(next);
-    router.refresh();
+    // Full-page nav so /auth/post-login sees the fresh session cookies
+    // and can route by role. Tenants never touch /dashboard.
+    window.location.href = "/auth/post-login?next=" + encodeURIComponent(next);
   }
 
   return (
