@@ -381,6 +381,77 @@ export async function commitImport(input: {
         if (error) throw error;
         created++;
       }
+
+      else if (input.target === "contracts") {
+        const propName = clean(row.mapped.property_name);
+        const unitNo = clean(row.mapped.unit_number);
+        const fullName = clean(row.mapped.full_name);
+        const fileUrl = clean(row.mapped.contract_file);
+
+        const propId = propByName.get(propName.toLowerCase());
+        if (!propId) throw new Error("Property not found: " + propName);
+
+        const unitId = unitByKey.get(propId + "|" + unitNo);
+        if (!unitId) throw new Error("Unit " + unitNo + " not found in " + propName);
+
+        const tenantId = tenantByName.get(fullName.toLowerCase());
+        if (!tenantId) throw new Error("Tenant not found: " + fullName);
+
+        // Find the lease on this unit for this tenant
+        const { data: lease } = await admin
+          .schema("core")
+          .from("lease")
+          .select("id")
+          .eq("unit_id", unitId)
+          .eq("tenant_id", tenantId)
+          .order("start_date", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!lease) {
+          throw new Error(
+            "No lease found for " + fullName + " in unit " + unitNo
+          );
+        }
+
+        const leaseId = (lease as { id: string }).id;
+
+        // Duplicate check: contract already exists for this lease?
+        const { data: existing } = await admin
+          .schema("prep")
+          .from("contract")
+          .select("id")
+          .eq("lease_id", leaseId)
+          .limit(1)
+          .maybeSingle();
+
+        if (existing) {
+          skipped++;
+          continue;
+        }
+
+        if (!fileUrl) {
+          throw new Error("Contract file URL is required");
+        }
+        if (!/^https?:\/\//i.test(fileUrl)) {
+          throw new Error("Contract file must be a URL starting with http:// or https://");
+        }
+
+        const { error } = await admin
+          .schema("prep")
+          .from("contract")
+          .insert({
+            lease_id: leaseId,
+            template_id: null,
+            generated_body: null,
+            status: "signed",
+            signed_at: new Date().toISOString(),
+            signed_document_url: fileUrl,
+          });
+
+        if (error) throw error;
+        created++;
+      }
     } catch (err) {
       const message =
         err instanceof Error

@@ -14,7 +14,7 @@ export type ParsedSheet = {
 
 export type ImportStep = "source" | "map" | "review" | "done";
 
-export type TargetTable = "units" | "tenants" | "leases" | "properties" | "invoices" | "contracts";
+export type TargetTable = "units" | "tenants" | "leases" | "properties" | "invoices";
 
 export type ColumnMapping = Record<string, string | null>;
 

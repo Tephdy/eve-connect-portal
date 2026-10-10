@@ -109,6 +109,18 @@ export const TARGETS: {
       { key: "due_date", label: "Due date", required: true, type: "date", aliases: ["due", "due date", "invoice date", "date"], hint: "DD/MM/YYYY" },
     ],
   },
+  {
+    key: "contracts",
+    label: "Contracts",
+    description: "One row per signed contract. Lease matched by property + unit + tenant name.",
+    permission: "contract:create",
+    fields: [
+      { key: "property_name", label: "Property", required: true, type: "text", aliases: ["property", "property name", "building"] },
+      { key: "unit_number", label: "Unit", required: true, type: "text", aliases: ["unit", "unit no", "unit number", "unit #"] },
+      { key: "full_name", label: "Tenant name", required: true, type: "text", aliases: ["tenant", "tenant name", "full name", "name"] },
+      { key: "contract_file", label: "Contract file URL", required: true, type: "text", aliases: ["contract file", "file", "url", "contract url", "drive link", "contract link"] },
+    ],
+  },
 ];
 
 export function getTarget(key: TargetTable) {

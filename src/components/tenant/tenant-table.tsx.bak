@@ -3,7 +3,7 @@ import { User } from "lucide-react";
 import { Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Card, CardBody } from "@/components/ui/card";
 import { StatusPill } from "@/components/dashboard/status-pill";
-import type { TenantWithProperty } from "@/lib/db/tenants";
+import type { Tenant } from "@/lib/db/tenants";
 
 const STATUS_TONE: Record<string, "brand" | "green" | "gray" | "red" | "yellow"> = {
   prospect: "yellow",
@@ -21,7 +21,7 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-export function TenantTable({ tenants }: { tenants: TenantWithProperty[] }) {
+export function TenantTable({ tenants }: { tenants: Tenant[] }) {
   return (
     <Card className="overflow-hidden">
       <CardBody className="p-0">
@@ -29,7 +29,6 @@ export function TenantTable({ tenants }: { tenants: TenantWithProperty[] }) {
           <THead>
             <TR>
               <TH>Tenant</TH>
-              <TH>Unit</TH>
               <TH>Contact</TH>
               <TH>Messenger</TH>
               <TH>Status</TH>
@@ -56,15 +55,6 @@ export function TenantTable({ tenants }: { tenants: TenantWithProperty[] }) {
                       )}
                     </div>
                   </Link>
-                </TD>
-                <TD className="text-sm text-ink-600">
-                  {t.unit_number ? (
-                    <span className="font-medium text-ink-900">
-                      {t.unit_number}
-                    </span>
-                  ) : (
-                    <span className="text-ink-400">—</span>
-                  )}
                 </TD>
                 <TD className="text-sm text-ink-600">{t.phone ?? "—"}</TD>
                 <TD className="text-sm text-ink-600">{t.messenger_name ?? "—"}</TD>

@@ -14,6 +14,7 @@ const PUBLIC_PATHS = [
   "/portal/logout",
   "/portal/terms",
   "/portal/privacy",
+  "/intake",
 ];
 
 // Staff-only route prefixes. Tenants hitting these get bounced to /portal.

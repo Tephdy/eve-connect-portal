@@ -20,7 +20,6 @@ export function ContractTable({ contracts }: { contracts: Contract[] }) {
           <THead>
             <TR>
               <TH>Contract</TH>
-              <TH>Property</TH>
               <TH>Tenant</TH>
               <TH>Template</TH>
               <TH>Status</TH>
@@ -44,7 +43,6 @@ export function ContractTable({ contracts }: { contracts: Contract[] }) {
                     </span>
                   </Link>
                 </TD>
-                <TD className="text-ink-600">{c.property_name ?? "—"}</TD>
                 <TD className="text-ink-600">{c.tenant_name ?? "—"}</TD>
                 <TD className="text-ink-600">{c.template_name ?? "—"}</TD>
                 <TD>

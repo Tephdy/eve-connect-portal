@@ -46,12 +46,37 @@ function SubmitButton({ label }: { label: string }) {
   return <Button type="submit" loading={pending}>{label}</Button>;
 }
 
+// Add these helpers at the top of lease-form.tsx, replacing the existing adOnsToText:
+
+type AdOn = { text: string; amount: number };
+
 function adOnsToText(raw: unknown): string {
   if (!Array.isArray(raw)) return "";
   return raw
-    .map((x: any) => (typeof x === "string" ? x : x.text ?? x.label ?? ""))
+    .map((x: any) => {
+      if (typeof x === "string") return x;
+      const text = x.text ?? x.label ?? "";
+      const amount = Number(x.amount);
+      if (text && Number.isFinite(amount) && amount > 0) {
+        return text + " (" + amount + ")";
+      }
+      return text;
+    })
     .filter(Boolean)
     .join(", ");
+}
+
+function parseAdOnsString(value: string): AdOn[] {
+  if (!value.trim()) return [];
+  // Split on commas that are NOT inside parentheses
+  const parts = value.split(/,(?![^(]*\))/).map((s) => s.trim()).filter(Boolean);
+  return parts.map((part) => {
+    const m = part.match(/^(.*?)\s*\((\d+(?:\.\d+)?)\)\s*$/);
+    if (m) {
+      return { text: m[1].trim(), amount: Number(m[2]) };
+    }
+    return { text: part, amount: 0 };
+  });
 }
 
 function addMonths(iso: string, months: number): string {

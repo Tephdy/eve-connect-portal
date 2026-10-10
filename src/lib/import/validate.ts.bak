@@ -236,55 +236,6 @@ export async function validateImport(input: {
       }
     }
 
-    // ---- Contracts ----
-    if (input.target === "contracts") {
-      const propName = mapped.property_name;
-      const unitNo = mapped.unit_number;
-      const fullName = mapped.full_name;
-      const fileUrl = mapped.contract_file;
-
-      let propId: string | undefined;
-      if (propName) {
-        propId = propByName.get(propName.toLowerCase());
-        if (!propId) {
-          errors.push({
-            rowIndex: index,
-            field: "property_name",
-            message: 'Property "' + propName + '" not found',
-          });
-        }
-      }
-
-      if (propId && unitNo) {
-        if (!unitByKey.has(propId + "|" + unitNo)) {
-          errors.push({
-            rowIndex: index,
-            field: "unit_number",
-            message: "Unit " + unitNo + " not found in " + propName,
-          });
-        }
-      }
-
-      if (fullName) {
-        const matchedByName = tenantByName.get(fullName.toLowerCase());
-        if (!matchedByName) {
-          errors.push({
-            rowIndex: index,
-            field: "full_name",
-            message: 'No tenant found matching name "' + fullName + '"',
-          });
-        }
-      }
-
-      if (fileUrl && !/^https?:\/\//i.test(fileUrl)) {
-        errors.push({
-          rowIndex: index,
-          field: "contract_file",
-          message: "Contract file must be a URL starting with http:// or https://",
-        });
-      }
-    }
-
     // Type checks
     for (const field of def.fields) {
       if (field.type === "number" && mapped[field.key]) {

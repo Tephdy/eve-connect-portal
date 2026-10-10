@@ -14,8 +14,6 @@ export type Contract = {
   template_name?: string;
   tenant_name?: string;
   unit_number?: string;
-  property_id?: string | null;
-  property_name?: string;
 };
 
 async function enrich(rows: Contract[]): Promise<Contract[]> {
@@ -40,90 +38,34 @@ async function enrich(rows: Contract[]): Promise<Contract[]> {
       ? supabase.from("tenant").select("id, full_name").in("id", tenantIds)
       : Promise.resolve({ data: [] as { id: string; full_name: string }[] }),
     unitIds.length > 0
-      ? supabase.from("unit").select("id, unit_number, property_id").in("id", unitIds)
-      : Promise.resolve({ data: [] as { id: string; unit_number: string; property_id: string | null }[] }),
+      ? supabase.from("unit").select("id, unit_number").in("id", unitIds)
+      : Promise.resolve({ data: [] as { id: string; unit_number: string }[] }),
   ]);
-
-  // Property names for the enriched rows
-  const propIds = Array.from(
-    new Set((units ?? []).map((u: any) => u.property_id).filter(Boolean))
-  );
-  const { data: props } = propIds.length > 0
-    ? await supabase.from("property").select("id, name").in("id", propIds)
-    : { data: [] as { id: string; name: string }[] };
 
   const leaseMap = new Map((leases ?? []).map((l) => [l.id, l]));
   const tplMap = new Map((templates ?? []).map((t) => [t.id, t.name]));
   const tenMap = new Map((tenants ?? []).map((t) => [t.id, t.full_name]));
-  const unitMap = new Map((units ?? []).map((u: any) => [u.id, u]));
-  const propMap = new Map((props ?? []).map((p: any) => [p.id, p.name]));
+  const unitMap = new Map((units ?? []).map((u) => [u.id, u.unit_number]));
 
   rows.forEach((c) => {
     c.template_name = c.template_id ? tplMap.get(c.template_id) : undefined;
     const lease = leaseMap.get(c.lease_id);
     if (lease) {
       c.tenant_name = tenMap.get(lease.tenant_id);
-      const u: any = unitMap.get(lease.unit_id);
-      if (u) {
-        c.unit_number = u.unit_number;
-        c.property_id = u.property_id ?? null;
-        c.property_name = u.property_id ? propMap.get(u.property_id) : undefined;
-      }
+      c.unit_number = unitMap.get(lease.unit_id);
     }
   });
   return rows;
 }
 
-export type ContractFilter = {
-  status?: "all" | "draft" | "sent" | "signed" | "void";
-  template_id?: string | "all";
-  property_id?: string | "all";
-  q?: string;
-  from?: string;
-  to?: string;
-};
-
-export async function listContracts(
-  filter: ContractFilter = {}
-): Promise<Contract[]> {
+export async function listContracts(): Promise<Contract[]> {
   const supabase = await createClient();
-
-  let q = supabase
+  const { data, error } = await supabase
     .from("contract")
     .select("id, lease_id, template_id, generated_body, status, signed_at, signed_document_url, tenant_signature, created_at")
     .order("created_at", { ascending: false });
-
-  if (filter.status && filter.status !== "all") q = q.eq("status", filter.status);
-  if (filter.template_id && filter.template_id !== "all") q = q.eq("template_id", filter.template_id);
-
-  const { data, error } = await q;
   if (error) throw new Error(error.message);
-
-  let rows = await enrich((data ?? []) as Contract[]);
-
-  if (filter.property_id && filter.property_id !== "all") {
-    rows = rows.filter((c) => c.property_id === filter.property_id);
-  }
-
-  const needle = filter.q?.trim().toLowerCase();
-  if (needle) {
-    rows = rows.filter(
-      (c) =>
-        (c.tenant_name ?? "").toLowerCase().includes(needle) ||
-        (c.unit_number ?? "").toLowerCase().includes(needle)
-    );
-  }
-
-  if (filter.from) {
-    const fromTs = new Date(filter.from).getTime();
-    rows = rows.filter((c) => new Date(c.created_at).getTime() >= fromTs);
-  }
-  if (filter.to) {
-    const toTs = new Date(filter.to).getTime() + 86399999;
-    rows = rows.filter((c) => new Date(c.created_at).getTime() <= toTs);
-  }
-
-  return rows;
+  return enrich((data ?? []) as Contract[]);
 }
 
 export async function getContract(id: string): Promise<Contract | null> {

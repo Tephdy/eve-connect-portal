@@ -1,44 +1,14 @@
 import Link from "next/link";
 import { requirePagePermission } from "@/lib/auth/guard";
 import { listContracts } from "@/lib/db/contracts";
-import { listProperties } from "@/lib/db/properties";
-import { listTemplates } from "@/lib/db/templates";
 import { PageHeader } from "@/components/layout/page-header";
 import { EmptyState } from "@/components/layout/empty-state";
 import { Button } from "@/components/ui/button";
 import { ContractTable } from "@/components/contract/contract-table";
-import { ContractFilters } from "@/components/contract/contract-filters";
 
-export default async function ContractsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{
-    filter?: string;
-    template?: string;
-    q?: string;
-    from?: string;
-    to?: string;
-    property?: string;
-  }>;
-}) {
+export default async function ContractsPage() {
   await requirePagePermission("contract:read");
-  const sp = await searchParams;
-
-  const status =
-    (sp.filter as "all" | "draft" | "sent" | "signed" | "void") ?? "all";
-
-  const [contracts, properties, templates] = await Promise.all([
-    listContracts({
-      status,
-      template_id: sp.template ?? "all",
-      property_id: sp.property ?? "all",
-      q: sp.q ?? "",
-      from: sp.from ?? "",
-      to: sp.to ?? "",
-    }),
-    listProperties(),
-    listTemplates(),
-  ]);
+  const contracts = await listContracts();
 
   return (
     <div className="space-y-6">
@@ -57,15 +27,10 @@ export default async function ContractsPage({
         }
       />
 
-      <ContractFilters
-        properties={properties.map((p) => ({ id: p.id, name: p.name }))}
-        templates={templates.map((t) => ({ id: t.id, name: t.name }))}
-      />
-
       {contracts.length === 0 ? (
         <EmptyState
-          title="No contracts"
-          description="No contracts match your filters, or none exist yet."
+          title="No contracts yet"
+          description="Generate a contract from a lease and a template, or import existing signed contracts."
           action={
             <div className="flex gap-2">
               <Link href="/property/import">
