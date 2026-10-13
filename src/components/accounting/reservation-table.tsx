@@ -28,11 +28,13 @@ function shortDate(iso: string | null): string {
   });
 }
 
-export function ReservationTable({
-  rows,
+// @@CONTRACT_ENGINE:reservation-table-basepath
+export function ReservationTable({rows,
+  basePath = "/accounting",
   readOnly = false,
 }: {
   rows: ReservationRow[];
+  basePath?: string;
   readOnly?: boolean;
 }) {
   const [pending, start] = useTransition();
@@ -157,7 +159,7 @@ export function ReservationTable({
                         </Button>
                       )}
                       <Link
-                          href={"/accounting/reservations/" + r.id}
+                          href={basePath + "/reservations/" + r.id}
                           className="ml-3 text-sm font-medium text-brand-600 hover:underline dark:text-brand-400"
                         >
                           Review

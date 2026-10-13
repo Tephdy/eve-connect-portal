@@ -1,0 +1,227 @@
+// @@CONTRACT_ENGINE:reservation-print-logo
+import { notFound } from "next/navigation";
+import { requirePagePermission } from "@/lib/auth/guard";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getLogoDataUri } from "@/lib/contracts/logo";
+
+export const dynamic = "force-dynamic";
+
+export default async function ReservationContractPrintPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  await requirePagePermission("unit:read");
+  const { id } = await params;
+
+  const admin = createAdminClient();
+
+  const { data: contract } = await admin
+    .schema("prep")
+    .from("reservation_contract")
+    .select("id, generated_body, status, signed_at, tenant_signature, reservation_id")
+    .eq("reservation_id", id)
+    .maybeSingle();
+
+  if (!contract) notFound();
+
+  // Resolve the property for the logo (and to display name in the header)
+  const { data: reservation } = await admin
+    .schema("acct")
+    .from("unit_reservation")
+    .select("unit_id, client_name, reserved_at")
+    .eq("id", id)
+    .maybeSingle();
+
+  let propertyName = "Eve's Residences";
+  if (reservation?.unit_id) {
+    const { data: unit } = await admin
+      .schema("core")
+      .from("unit")
+      .select("property_id")
+      .eq("id", reservation.unit_id)
+      .maybeSingle();
+
+    if (unit?.property_id) {
+      const { data: prop } = await admin
+        .schema("core")
+        .from("property")
+        .select("name")
+        .eq("id", unit.property_id)
+        .maybeSingle();
+      propertyName = prop?.name ?? propertyName;
+    }
+  }
+
+  // Same logo logic as the lease contract print page
+  const logoFilename = propertyName.toUpperCase().includes("BED AND BATH")
+    ? "bnb_logo.png"
+    : "eves_logo.png";
+  const logoDataUri = await getLogoDataUri(logoFilename);
+
+  const bodyHtml =
+    (contract.generated_body ?? "") +
+    (contract.tenant_signature
+      ? "<div class='signature-block'><div><p><strong>Client signature</strong></p>" +
+        "<img class='sig-img' src='" +
+        contract.tenant_signature +
+        "' alt='signature' /></div></div>"
+      : "");
+
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: printCss }} />
+      <div className="print-root">
+        <div className="screen-toolbar">
+          <a href={`/marketing/reservations/${id}`} className="back-link">
+            ← Back to reservation
+          </a>
+          <button type="button" className="print-btn">
+            Print / Save as PDF
+          </button>
+        </div>
+        <article className="page">
+          <img className="watermark" src={logoDataUri} alt="" aria-hidden />
+
+          <header className="letterhead">
+            <img className="header-logo" src={logoDataUri} alt="" />
+            <div className="letterhead-text">
+              <h1 className="letterhead-title">{propertyName}</h1>
+              <p className="letterhead-subtitle">RESERVATION AGREEMENT</p>
+            </div>
+          </header>
+
+          <section
+            className="contract-body"
+            dangerouslySetInnerHTML={{ __html: bodyHtml }}
+          />
+        </article>
+      </div>
+      <script
+        dangerouslySetInnerHTML={{
+          __html:
+            "document.addEventListener('click',function(e){if(e.target&&e.target.classList&&e.target.classList.contains('print-btn')){window.print();}});",
+        }}
+      />
+    </>
+  );
+}
+
+const printCss = `
+  @page { size: 8.5in 14in; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #e5e7eb; overflow: auto !important; }
+  body { font-family: Georgia, "Times New Roman", serif; color: #111; }
+
+  .print-root { min-height: 100vh; padding-bottom: 40px; }
+
+  .screen-toolbar {
+    position: sticky; top: 0; z-index: 50; width: 100%;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 24px; background: #1f2937; color: white;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 13px;
+  }
+  .screen-toolbar .back-link { color: #cbd5e1; text-decoration: none; }
+  .screen-toolbar .back-link:hover { color: white; }
+  .screen-toolbar .print-btn {
+    background: #3b6fff; color: white; border: 0;
+    padding: 8px 16px; border-radius: 8px;
+    font-weight: 600; cursor: pointer; font-size: 13px;
+  }
+
+  .page {
+    position: relative;
+    width: 215.9mm; min-height: 355.6mm; margin: 24px auto;
+    padding: 15mm 20mm 18mm 20mm; background: white;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+  }
+
+  /* Faded watermark behind content */
+  .watermark {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 65%;
+    opacity: 0.05;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Letterhead block */
+  .letterhead {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #d1d5db;
+  }
+  .header-logo {
+    height: 60px;
+    width: auto;
+    flex-shrink: 0;
+  }
+  .letterhead-text { flex: 1; }
+  .letterhead-title {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: 0.5px;
+    color: #1a1a1a;
+  }
+  .letterhead-subtitle {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #6b7280;
+    margin: 2px 0 0 0;
+  }
+
+  .contract-body {
+    position: relative;
+    z-index: 1;
+    display: block;
+    page-break-inside: auto;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .contract-body h1 { font-size: 18px; margin: 12px 0 8px; }
+  .contract-body h2 { font-size: 14px; margin: 10px 0 6px; }
+  .contract-body h3 { font-size: 12px; margin: 8px 0 4px; }
+  .contract-body table.contract-table {
+    width: 100%; border-collapse: collapse; margin: 8px 0;
+    page-break-inside: auto;
+  }
+  .contract-body table.contract-table td {
+    border: 1px solid #999; padding: 4px 6px; vertical-align: top;
+  }
+  .contract-body ul, .contract-body ol { margin: 6px 0 6px 20px; }
+  .contract-body li { page-break-inside: avoid; }
+  .signature-block { page-break-inside: avoid; margin-top: 24px; }
+  .sig-img { max-height: 80px; }
+  /* @@CONTRACT_ENGINE:rep-signature-css */
+  .rep-signature {
+    display: block;
+    max-height: 55px;
+    width: auto;
+    margin: 6px 0 2px 0;
+    page-break-inside: avoid;
+  }
+
+  @media print {
+    html, body { background: white; }
+    .screen-toolbar { display: none; }
+    .page {
+      box-shadow: none;
+      margin: 0;
+      width: 100%;
+      min-height: auto;
+      padding: 12mm 15mm;
+    }
+  }
+`;

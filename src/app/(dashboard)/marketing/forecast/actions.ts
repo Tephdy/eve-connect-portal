@@ -234,6 +234,20 @@ export async function reserveUnitAction(
       }
     }
 
+    // @@CONTRACT_ENGINE:reservation-action-hook
+    // Auto-render the reservation contract body. Non-fatal on failure.
+    try {
+      const { renderReservationContract } = await import(
+        "@/lib/contracts/reservation-attach"
+      );
+      await renderReservationContract(res.id);
+    } catch (renderErr) {
+      console.error(
+        "[reserveUnitAction] reservation contract render failed:",
+        renderErr instanceof Error ? renderErr.message : renderErr
+      );
+    }
+
     await logAudit({
       actor_id: session?.id ?? null,
       entity_type: "unit_reservation",

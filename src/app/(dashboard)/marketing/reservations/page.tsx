@@ -69,7 +69,8 @@ export default async function MarketingReservationsPage({
           description="Reserve a unit from the Forecast page to get started."
         />
       ) : (
-        <ReservationTable rows={rows} />
+        // @@CONTRACT_ENGINE:marketing-reservations-basepath
+      <ReservationTable rows={rows} basePath="/marketing" />
       )}
     </div>
   );

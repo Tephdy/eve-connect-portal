@@ -1676,6 +1676,7 @@ export type Database = {
         Row: {
           active: boolean
           body_markdown: string
+          doc_type: string
           id: string
           name: string
           property_id: string | null
@@ -1686,6 +1687,7 @@ export type Database = {
         Insert: {
           active?: boolean
           body_markdown: string
+          doc_type?: string
           id?: string
           name: string
           property_id?: string | null
@@ -1696,6 +1698,7 @@ export type Database = {
         Update: {
           active?: boolean
           body_markdown?: string
+          doc_type?: string
           id?: string
           name?: string
           property_id?: string | null
@@ -1704,6 +1707,53 @@ export type Database = {
           version?: number
         }
         Relationships: []
+      }
+      reservation_contract: {
+        Row: {
+          created_at: string
+          generated_body: string | null
+          id: string
+          reservation_id: string
+          signature_token: string | null
+          signed_at: string | null
+          status: string
+          template_id: string | null
+          tenant_signature: string | null
+          token_expires_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          generated_body?: string | null
+          id?: string
+          reservation_id: string
+          signature_token?: string | null
+          signed_at?: string | null
+          status?: string
+          template_id?: string | null
+          tenant_signature?: string | null
+          token_expires_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          generated_body?: string | null
+          id?: string
+          reservation_id?: string
+          signature_token?: string | null
+          signed_at?: string | null
+          status?: string
+          template_id?: string | null
+          tenant_signature?: string | null
+          token_expires_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reservation_contract_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "contract_template"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       unit_inspection: {
         Row: {
