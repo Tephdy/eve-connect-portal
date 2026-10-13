@@ -145,8 +145,27 @@ export async function createReservation(input: {
     .single();
   if (error) throw new Error(error.message);
 
-  // Flip unit status
-  await admin.from("unit").update({ status: "reserved" }).eq("id", input.unit_id);
+  // @@CONTRACT_ENGINE:reserve-conditional-flip
+  // Only flip to "reserved" when the unit is currently vacant. If it's
+  // occupied or under maintenance, preserve that status — the reservation
+  // acts as a soft hold for when the unit becomes available.
+  const { data: currentUnit } = await admin
+    .schema("core")
+    .from("unit")
+    .select("status")
+    .eq("id", input.unit_id)
+    .maybeSingle();
+
+  const priorStatus = (currentUnit as { status?: string } | null)?.status;
+
+  if (priorStatus === "vacant") {
+    await admin
+      .schema("core")
+      .from("unit")
+      .update({ status: "reserved" })
+      .eq("id", input.unit_id);
+  }
+  // Otherwise: leave occupied/maintenance/reserved untouched.
 
   return data as UnitReservation;
 }

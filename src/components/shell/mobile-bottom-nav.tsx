@@ -59,7 +59,18 @@ const MAINTENANCE_TABS: Tab[] = [
   { key: "more",     label: "More",                 icon: MenuIcon },
 ];
 
+// @@CONTRACT_ENGINE:marketing-mobile-tabs
+const MARKETING_TABS: Tab[] = [
+  { key: "home",         href: "/dashboard",               label: "Home",         icon: LayoutDashboard },
+  { key: "forecast",     href: "/marketing/forecast",      label: "Forecast",     icon: BarChart3 },
+  { key: "reservations", href: "/marketing/reservations",  label: "Reservations", icon: ClipboardCheck },
+  { key: "inquiries",    href: "/marketing/inquiries",     label: "Inquiries",    icon: Users },
+  { key: "more",         label: "More",                    icon: MenuIcon },
+];
+
 function tabsForRoles(keys: string[]): Tab[] {
+  // @@CONTRACT_ENGINE:marketing-mobile-tabs
+  if (keys.includes("marketing"))   return MARKETING_TABS;
   if (keys.includes("accounting")) return ACCOUNTING_TABS;
   if (keys.includes("executive"))  return EXECUTIVE_TABS;
   if (keys.includes("property_rep")) return PROPERTY_TABS;

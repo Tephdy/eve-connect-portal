@@ -149,12 +149,15 @@ export function ForecastTable({
                           >
                             Unreserve
                           </Button>
-                        ) : (
+                                                ) : (
                           <Button
                             size="sm"
                             variant="secondary"
                             onClick={() => setReserving(u.id)}
-                            disabled={u.status !== "vacant"}
+                            // @@CONTRACT_ENGINE:reserve-allow-non-vacant
+                            // Reserve is enabled for all non-reserved units
+                            // (vacant, occupied, maintenance). The reserved
+                            // case is handled by the branch above.
                           >
                             Reserve
                           </Button>
