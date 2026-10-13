@@ -183,6 +183,7 @@ export async function createTenantWithLeaseAndContract(
     .limit(1)
     .maybeSingle();
 
+  // @@CONTRACT_ENGINE:intake-hook — extended lease payload
   const leasePayload = {
     tenant_id: tenantId,
     unit_id: (unit as { id: string }).id,
@@ -190,14 +191,23 @@ export async function createTenantWithLeaseAndContract(
     end_date: input.rental_end,
     move_in_date: input.rental_start,
     monthly_rent: input.rate,
-    deposit_amount: input.sec_dep ?? 0,
+    occupancy_fee: input.occupancy_fee ?? 0,
+    utility_deposit: input.utility_dep ?? 0,
+    advance_amount: input.advance ?? input.rate,   // 1-month advance
+    advance_due_date: input.rental_start,
+    // Deposit is 2 months total: split evenly into deposit_1 + deposit_2
+    deposit_amount: (input.sec_dep ?? 0) * 2,
     deposit_1: input.sec_dep ?? 0,
-    deposit_2: 0,
+    deposit_2: input.sec_dep ?? 0,
+    deposit_1_due_date: input.rental_start,
+    deposit_2_due_date: input.rental_start,
+    due_day: input.due_date ? new Date(input.due_date).getDate() : null,
     ad_ons: parsedAdOns,
     ad_ons_amount: computedAdOnsAmount,
     notice_period_days: 30,
     status: "active" as const,
     term: "6_months" as const,
+    term_months: 6,
   };
 
   let leaseId: string;
@@ -238,15 +248,29 @@ export async function createTenantWithLeaseAndContract(
       lease_id: leaseId,
       template_id: null,
       generated_body: null,
-      status: "signed",
-      signed_at: new Date().toISOString(),
+      // @@CONTRACT_ENGINE:intake-draft
+      // Contract starts as draft; tenant signs later via /portal/lease/[id]/sign
+      status: "draft",
+      signed_at: null,
       signed_document_url: null,
-      tenant_signature: input.signature,
+      tenant_signature: null,
     })
     .select("id")
     .single();
   if (contractErr) throw new Error("Contract insert failed: " + contractErr.message);
   const contractId = (insertedContract as { id: string }).id;
+
+  // ---- 7b. Render contract body from template ----
+  // @@CONTRACT_ENGINE:intake-hook — render call
+  // @@CONTRACT_ENGINE:intake-uses-helper
+  {
+    const { renderContractForLease } = await import(
+      "@/lib/contracts/attach"
+    );
+    // The contract row was already inserted above; the helper upserts its
+    // template_id + generated_body based on lease.term → template term_type.
+    await renderContractForLease(leaseId, { repName: null });
+  }
 
   // ---- 8. Inspection ----
   const inspectionPayload = {
@@ -265,6 +289,8 @@ export async function createTenantWithLeaseAndContract(
     optional_items: toNull(input.optional_items), optional_items_comment: toNull(input.optional_items_com),
     door: toNull(input.door), door_comment: toNull(input.door_com),
     number_of_persons: input.num_per ?? null,
+    water_initial: input.water ? Number(input.water) : null,
+    electric_initial: input.electric ? Number(input.electric) : null,
     filled_by_tenant_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };

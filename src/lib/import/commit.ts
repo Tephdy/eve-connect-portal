@@ -2,12 +2,17 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTarget } from "./field-defs";
 import type {
+
+
   ColumnMapping,
   ImportPreviewRow,
   ImportSummary,
   RowError,
   TargetTable,
 } from "./types";
+// @@CONTRACT_ENGINE:import-render
+import { renderContractForLease } from "@/lib/contracts/attach";
+
 
 const INVOICE_TYPE_MAP: Record<string, string> = {
   "rent": "rent",
@@ -29,7 +34,8 @@ function clean(v: string | null | undefined): string {
 }
 
 function parseNum(v: string | null): number | null {
-  if (!v) return null;
+
+if (!v) return null;
   const n = Number(v.replace(/[₱,\s]/g, ""));
   return Number.isFinite(n) ? n : null;
 }
@@ -241,21 +247,29 @@ export async function commitImport(input: {
           if (propId) {
             const unitId = unitByKey.get(propId + "|" + unitNo);
             if (unitId) {
-              const { error: leaseErr } = await admin.schema("core").from("lease").insert({
-                unit_id: unitId,
-                tenant_id: tenantId,
-                start_date: moveIn,
-                end_date: endDate,
-                monthly_rent: rent,
-                deposit_amount: 0,
-                notice_period_days: 30,
-                status: "active",
-              });
+              const { data: leaseRow, error: leaseErr } = await admin
+                .schema("core")
+                .from("lease")
+                .insert({
+                  unit_id: unitId,
+                  tenant_id: tenantId,
+                  start_date: moveIn,
+                  end_date: endDate,
+                  monthly_rent: rent,
+                  deposit_amount: 0,
+                  notice_period_days: 30,
+                  status: "active",
+                })
+                .select("id")
+                .single();
               if (leaseErr) {
                 errors.push({
                   rowIndex: row.index,
                   message: "Tenant created but lease failed: " + leaseErr.message,
                 });
+              } else if (leaseRow?.id) {
+                // @@CONTRACT_ENGINE:import-render — auto-render tenant-import lease
+                await renderContractForLease(leaseRow.id, { repName: null });
               }
             }
           }
@@ -306,8 +320,17 @@ export async function commitImport(input: {
           throw new Error("Start date and end date are required");
         }
 
-        const { error } = await admin.schema("core").from("lease").insert(payload);
+        const { data: leaseRow, error } = await admin
+          .schema("core")
+          .from("lease")
+          .insert(payload)
+          .select("id")
+          .single();
         if (error) throw error;
+        if (leaseRow?.id) {
+          // @@CONTRACT_ENGINE:import-render — auto-render lease-import
+          await renderContractForLease(leaseRow.id, { repName: null });
+        }
         created++;
       }
 

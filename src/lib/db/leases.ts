@@ -2,6 +2,8 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { LeaseCreateInput, LeaseUpdateInput } from "@/lib/schemas/lease";
+import { controlNumberFromId, barcodeValueFor } from "@/lib/contracts/control-number";
+import { renderContractForLease } from "@/lib/contracts/attach";
 
 export type Lease = {
   id: string;
@@ -51,11 +53,19 @@ function logWriteError(fn: string, error: any) {
 export async function createLease(
   input: LeaseCreateInput & { reservation_id?: string | null }
 ): Promise<Lease> {
+  // @@CONTRACT_ENGINE:lease-control-number
   const admin = createAdminClient();
+
+  // Generate the lease id up front so control_number is deterministic.
+  const leaseId = crypto.randomUUID();
+  const control_number = controlNumberFromId(leaseId);
+  const barcode_value = barcodeValueFor(control_number);
+
   const { data, error } = await admin
     .schema("core")
     .from("lease")
     .insert({
+      id: leaseId,
       unit_id: input.unit_id,
       tenant_id: input.tenant_id,
       start_date: input.start_date,
@@ -77,6 +87,8 @@ export async function createLease(
       ad_ons_amount: input.ad_ons_amount ?? 0,
       status: input.status,
       reservation_id: input.reservation_id ?? null,
+      control_number,
+      barcode_value,
     })
     .select(LEASE_WRITE_SELECT)
     .single();
@@ -85,6 +97,11 @@ export async function createLease(
     logWriteError("createLease", error);
     throw new Error(error.message);
   }
+
+  // @@CONTRACT_ENGINE:lease-render
+  // Auto-render the contract body. Non-fatal on failure.
+  await renderContractForLease(leaseId, { repName: null });
+
   return data as unknown as Lease;
 }
 

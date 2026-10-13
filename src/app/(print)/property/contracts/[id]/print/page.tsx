@@ -165,8 +165,49 @@ const printCss = `
     padding: 15mm 20mm 18mm 20mm;
     background: white;
     box-shadow: 0 12px 32px rgba(0,0,0,0.12);
-    display: flex;
-    flex-direction: column;
+    /* @@CONTRACT_ENGINE:page-flex-removed
+       Was display:flex; flex-direction:column — squeezed long bodies
+       to one page. Removed so the body flows naturally across pages. */
+  }
+
+  .letterhead {
+    flex: 0 0 auto;
+    text-align: center;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid #d1d5db;
+    position: relative;
+    z-index: 1;
+  }
+
+  .contract-body {
+    /* Ensure the body always expands to fit all content */
+    display: block;
+    flex: 1 1 auto;
+    min-height: 0;
+    page-break-inside: auto;
+  }
+
+  .contract-body h1,
+  .contract-body h2 {
+    page-break-after: avoid;
+  }
+
+  .contract-body ol,
+  .contract-body ul {
+    page-break-inside: auto;
+  }
+
+  .contract-body li {
+    page-break-inside: avoid;
+  }
+
+  .contract-body table {
+    page-break-inside: auto;
+  }
+
+  .signature-block {
+    page-break-inside: avoid;
   }
 
   /* ---- Header region ---- */

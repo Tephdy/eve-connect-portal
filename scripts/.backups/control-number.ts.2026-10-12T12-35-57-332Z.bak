@@ -1,0 +1,31 @@
+import "server-only";
+
+// ---------------------------------------------------------------------------
+// Control number + barcode generation for contract documents.
+// Format: <PREFIX>-<YYYY>-<SEQ5>
+// Example: EVE-2026-00042
+// ---------------------------------------------------------------------------
+
+export type ControlNumberInput = {
+  /** Optional 3-letter prefix, e.g. "ADI" for Adi 168. Uppercased. */
+  prefix?: string | null;
+  /** Year to embed in the number. Defaults to the current year. */
+  year?: number;
+  /** Sequence number. Caller decides (see nextSequence helper). */
+  sequence: number;
+};
+
+export function formatControlNumber(input: ControlNumberInput): string {
+  const prefix = (input.prefix ?? "EVE").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) || "EVE";
+  const year = input.year ?? new Date().getFullYear();
+  const seq = Math.max(1, Math.floor(input.sequence));
+  return `${prefix}-${year}-${String(seq).padStart(5, "0")}`;
+}
+
+/**
+ * Code 128-encodable string. bwip-js renders this directly.
+ * Kept ASCII-safe; the control number is already ASCII.
+ */
+export function barcodeValueFor(controlNumber: string): string {
+  return controlNumber.replace(/\s+/g, "").toUpperCase();
+}

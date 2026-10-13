@@ -1,4 +1,9 @@
+// @@CONTRACT_ENGINE:render-file
 import "server-only";
+
+// ===========================================================================
+// LEGACY RENDERER (unchanged — used by simple templates)
+// ===========================================================================
 
 type RenderData = Record<string, string>;
 
@@ -45,4 +50,60 @@ export function buildLeaseData(input: {
       year: "numeric", month: "long", day: "numeric",
     }),
   };
+}
+
+// ===========================================================================
+// STRICT RENDERER (new — used by the long-term contract template)
+// ===========================================================================
+// @@CONTRACT_ENGINE:render-strict
+import type { ContractContext, PlaceholderKey } from "./types";
+
+const CONTRACT_PLACEHOLDER_RE = /\{\{\s*([a-z0-9_]+)\s*\}\}/g;
+
+function escapeHtml(v: string): string {
+  return v
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+export type RenderContractOptions = { escape?: boolean };
+
+export function renderContractContext(
+  template: string,
+  ctx: ContractContext,
+  opts: RenderContractOptions = {}
+): string {
+  const escape = opts.escape ?? true;
+  const missing = new Set<string>();
+  const bag = ctx as unknown as Record<string, unknown>;
+
+  const out = template.replace(
+    CONTRACT_PLACEHOLDER_RE,
+    (match, key: string) => {
+      if (!(key in bag)) {
+        missing.add(key);
+        return match;
+      }
+      const raw = bag[key];
+      const str = raw == null ? "" : String(raw);
+      return escape ? escapeHtml(str) : str;
+    }
+  );
+
+  if (missing.size > 0) {
+    throw new Error(
+      "renderContractContext: unresolved placeholder(s): " +
+        Array.from(missing).sort().join(", ")
+    );
+  }
+  return out;
+}
+
+export function extractPlaceholders(template: string): PlaceholderKey[] {
+  const found = new Set<string>();
+  for (const m of template.matchAll(CONTRACT_PLACEHOLDER_RE)) found.add(m[1]);
+  return Array.from(found) as PlaceholderKey[];
 }

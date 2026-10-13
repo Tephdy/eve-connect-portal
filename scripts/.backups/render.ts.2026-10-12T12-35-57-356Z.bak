@@ -1,0 +1,115 @@
+import "server-only";
+
+// ===========================================================================
+// LEGACY RENDERER (existing — unchanged, used by simple templates)
+// ===========================================================================
+
+type RenderData = Record<string, string>;
+
+export function renderTemplate(template: string, data: RenderData): string {
+  return template.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, key) => data[key] ?? "");
+}
+
+export function buildLeaseData(input: {
+  property_name: string;
+  property_address: string | null;
+  unit_number: string;
+  tenant_full_name: string;
+  tenant_email: string | null;
+  tenant_phone: string | null;
+  lease_start: string;
+  lease_end: string;
+  monthly_rent: number;
+  deposit_amount: number;
+  notice_period_days: number;
+  deposit_1?: number;
+  deposit_2?: number;
+}): RenderData {
+  const php = new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2,
+  });
+  return {
+    property_name: input.property_name,
+    property_address: input.property_address ?? "",
+    unit_number: input.unit_number,
+    tenant_full_name: input.tenant_full_name,
+    tenant_email: input.tenant_email ?? "",
+    tenant_phone: input.tenant_phone ?? "",
+    lease_start: input.lease_start,
+    lease_end: input.lease_end,
+    monthly_rent: php.format(input.monthly_rent),
+    deposit_amount: php.format(input.deposit_amount),
+    deposit_total: php.format(
+      (input.deposit_1 ?? 0) + (input.deposit_2 ?? 0)
+    ),
+    notice_period_days: String(input.notice_period_days),
+    today: new Date().toLocaleDateString("en-PH", {
+      year: "numeric", month: "long", day: "numeric",
+    }),
+  };
+}
+
+// ===========================================================================
+// STRICT RENDERER (new — used by the long-term contract template)
+//
+// Differences from the legacy renderer above:
+//   - Accepts a typed ContractContext (see ./types) instead of a loose map
+//   - Throws on unresolved placeholders (never ship a contract with {{...}})
+//   - HTML-escapes substituted values by default
+//   - Provides extractPlaceholders() for template validation
+// ===========================================================================
+
+import type { ContractContext, PlaceholderKey } from "./types";
+
+const CONTRACT_PLACEHOLDER_RE = /\{\{\s*([a-z0-9_]+)\s*\}\}/g;
+
+function escapeHtml(v: string): string {
+  return v
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+export type RenderContractOptions = {
+  /** When true (default), HTML-escapes substituted values. */
+  escape?: boolean;
+};
+
+export function renderContractContext(
+  template: string,
+  ctx: ContractContext,
+  opts: RenderContractOptions = {}
+): string {
+  const escape = opts.escape ?? true;
+  const missing = new Set<string>();
+  const bag = ctx as unknown as Record<string, unknown>;
+
+  const out = template.replace(CONTRACT_PLACEHOLDER_RE, (match, key: string) => {
+    if (!(key in bag)) {
+      missing.add(key);
+      return match;
+    }
+    const raw = bag[key];
+    const str = raw == null ? "" : String(raw);
+    return escape ? escapeHtml(str) : str;
+  });
+
+  if (missing.size > 0) {
+    throw new Error(
+      "renderContractContext: unresolved placeholder(s): " +
+        Array.from(missing).sort().join(", ")
+    );
+  }
+  return out;
+}
+
+/** Extract all `{{snake_case}}` placeholder keys used in a template. */
+export function extractPlaceholders(template: string): PlaceholderKey[] {
+  const found = new Set<string>();
+  for (const m of template.matchAll(CONTRACT_PLACEHOLDER_RE)) found.add(m[1]);
+  return Array.from(found) as PlaceholderKey[];
+}

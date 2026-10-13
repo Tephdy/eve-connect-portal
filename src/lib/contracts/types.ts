@@ -1,0 +1,146 @@
+// @@CONTRACT_ENGINE:types
+import type { Database } from "@/types/db";
+
+export type PlaceholderKey =
+  // Identity / tenant
+  | "legal_name" | "first_name" | "middle_name" | "last_name"
+  | "age" | "gender" | "nationality" | "religion" | "civil_status"
+  | "perm_address" | "rec_address"
+  | "mobile_num" | "email_addr"
+  // Employment
+  | "company" | "status" | "position" | "comp_addr" | "comp_tel"
+  | "comp_email" | "comp_msgr" | "marketing_src"
+  // Emergency contacts
+  | "ec1_name" | "ec1_tel" | "ec1_email" | "ec1_mssgr"
+  | "ec2_name" | "ec2_tel" | "ec2_email" | "ec2_mssgr"
+  // Lease / billing
+  | "rate" | "occupancy_fee" | "utility_dep" | "sec_dep" | "advance_amount"
+  | "advance_due_date" | "deposit_1" | "deposit_2"
+  | "deposit_1_due_date" | "deposit_2_due_date"
+  | "due_date" | "due_day"
+  | "rental_start" | "rental_end" | "move_in_date"
+  | "control_number" | "barcode"
+  | "term_months"
+  // Unit / property
+  | "unit_no" | "unit_num" | "property_name" | "property_address"
+  // Reservation snapshot
+  | "reservation_fee" | "reserv_nonrefundable_on"
+  | "deposit_nonrefund_on" | "target_move_in" | "total"
+  // Inspection (move-in checklist)
+  | "switches" | "switches_com"
+  | "sockets" | "sockets_com"
+  | "cabinet" | "cabinet_com"
+  | "lavatory" | "lavatory_com"
+  | "light_bulb" | "light_bulb_com"
+  | "faucets" | "faucets_com"
+  | "shower_head" | "shower_head_com"
+  | "declogging" | "declogging_com"
+  | "toilet_bowl" | "toilet_bowl_com"
+  | "kitchen_sink" | "kitchen_sink_com"
+  | "wall_paint" | "wall_paint_com"
+  | "optional" | "optional_com"
+  | "doors" | "doors_com"
+  | "num_per" | "water" | "electric"
+  | "water_initial" | "electric_initial"
+  // Meta
+  | "current_date" | "date" | "day20" | "rep";
+
+export type ContractContext = {
+  // tenant
+  legal_name: string;
+  first_name: string;
+  middle_name: string | null;
+  last_name: string;
+  age: string | null;
+  gender: string | null;
+  nationality: string | null;
+  religion: string | null;
+  civil_status: string | null;
+  perm_address: string | null;
+  rec_address: string | null;
+  mobile_num: string;
+  email_addr: string;
+  company: string | null;
+  status: string | null;
+  position: string | null;
+  comp_addr: string | null;
+  comp_tel: string | null;
+  comp_email: string | null;
+  comp_msgr: string | null;
+  marketing_src: string | null;
+  ec1_name: string | null;
+  ec1_tel: string | null;
+  ec1_email: string | null;
+  ec1_mssgr: string | null;
+  ec2_name: string | null;
+  ec2_tel: string | null;
+  ec2_email: string | null;
+  ec2_mssgr: string | null;
+
+  // lease
+  rate: string;
+  occupancy_fee: string;
+  utility_dep: string;
+  sec_dep: string;
+  advance_amount: string;
+  advance_due_date: string;
+  deposit_1: string;
+  deposit_2: string;
+  deposit_1_due_date: string;
+  deposit_2_due_date: string;
+  due_date: string;
+  due_day: number | null;
+  rental_start: string;
+  rental_end: string;
+  move_in_date: string;
+  control_number: string;
+  barcode: string;
+  term_months: string;
+
+  // unit / property
+  unit_no: string;
+  unit_num: string;
+  property_name: string;
+  property_address: string | null;
+
+  // reservation snapshot
+  reservation_fee: string;
+  reserv_nonrefundable_on: string;
+  deposit_nonrefund_on: string;
+  target_move_in: string;
+  total: string;
+
+  // inspection
+  switches: string; switches_com: string;
+  sockets: string; sockets_com: string;
+  cabinet: string; cabinet_com: string;
+  lavatory: string; lavatory_com: string;
+  light_bulb: string; light_bulb_com: string;
+  faucets: string; faucets_com: string;
+  shower_head: string; shower_head_com: string;
+  declogging: string; declogging_com: string;
+  toilet_bowl: string; toilet_bowl_com: string;
+  kitchen_sink: string; kitchen_sink_com: string;
+  wall_paint: string; wall_paint_com: string;
+  optional: string; optional_com: string;
+  doors: string; doors_com: string;
+  num_per: string;
+  water: string;
+  electric: string;
+  water_initial: string;
+  electric_initial: string;
+
+  // meta
+  current_date: string;
+  date: string;
+  day20: string;
+  rep: string;
+};
+
+export type BuildContractContextInput = {
+  leaseId: string;
+  repName?: string | null;
+};
+
+export type ContractTemplateRow =
+  Database["prep"]["Tables"]["contract_template"]["Row"];

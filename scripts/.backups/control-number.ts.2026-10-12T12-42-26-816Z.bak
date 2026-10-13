@@ -1,0 +1,21 @@
+// @@CONTRACT_ENGINE:control-number
+import "server-only";
+
+export type ControlNumberInput = {
+  prefix?: string | null;
+  year?: number;
+  sequence: number;
+};
+
+export function formatControlNumber(input: ControlNumberInput): string {
+  const prefix =
+    (input.prefix ?? "EVE").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6) ||
+    "EVE";
+  const year = input.year ?? new Date().getFullYear();
+  const seq = Math.max(1, Math.floor(input.sequence));
+  return `${prefix}-${year}-${String(seq).padStart(5, "0")}`;
+}
+
+export function barcodeValueFor(controlNumber: string): string {
+  return controlNumber.replace(/\s+/g, "").toUpperCase();
+}

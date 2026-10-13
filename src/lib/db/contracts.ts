@@ -186,3 +186,68 @@ export async function voidContract(id: string): Promise<void> {
     .from("contract").update({ status: "void" }).eq("id", id);
   if (error) throw new Error(error.message);
 }
+
+// @@CONTRACT_ENGINE:contracts-helpers
+import { buildContractContext } from "@/lib/contracts/build-context";
+import { renderContractContext } from "@/lib/contracts/render";
+
+export async function regenerateContractBody(
+  contractId: string
+): Promise<void> {
+  const supabase = await createClient();
+
+  const { data: contract, error } = await supabase
+    .from("contract")
+    .select("id, lease_id, template_id")
+    .eq("id", contractId)
+    .single();
+
+  if (error || !contract) {
+    throw new Error(
+      "regenerateContractBody: contract not found — " + contractId
+    );
+  }
+  if (!contract.template_id) {
+    throw new Error(
+      "regenerateContractBody: contract has no template_id; cannot render."
+    );
+  }
+
+  const { data: tmpl } = await supabase
+    .from("contract_template")
+    .select("body_markdown")
+    .eq("id", contract.template_id)
+    .single();
+
+  if (!tmpl) {
+    throw new Error("regenerateContractBody: template not found.");
+  }
+
+  const ctx = await buildContractContext({ leaseId: contract.lease_id });
+  const rendered = renderContractContext(tmpl.body_markdown, ctx);
+
+  const { error: upErr } = await supabase
+    .from("contract")
+    .update({ generated_body: rendered })
+    .eq("id", contractId);
+  if (upErr) throw new Error(upErr.message);
+}
+
+export async function previewContractBody(
+  leaseId: string,
+  templateId: string
+): Promise<string> {
+  const supabase = await createClient();
+
+  const { data: tmpl } = await supabase
+    .from("contract_template")
+    .select("body_markdown")
+    .eq("id", templateId)
+    .single();
+
+  if (!tmpl) throw new Error("previewContractBody: template not found.");
+
+  const ctx = await buildContractContext({ leaseId });
+  return renderContractContext(tmpl.body_markdown, ctx);
+}
+
