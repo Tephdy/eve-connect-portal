@@ -98,6 +98,8 @@ const GROUPS: NavGroup[] = [
       { href: "/marketing/inquiries", label: "Inquiries", icon: MessageSquare, roles: ["marketing", "executive"] },
       // @@CONTRACT_ENGINE:marketing-sidebar-reservations
       { href: "/marketing/reservations", label: "Reservations", icon: KeyRound, roles: ["marketing", "executive"] },
+      // @@CONTRACT_ENGINE:marketing-sidebar-spreadsheet
+      { href: "/marketing/spreadsheet", label: "Spreadsheet", icon: BarChart3, roles: ["marketing", "executive"] },
       { href: "/marketing/receipts",     label: "Receipts",       icon: Upload, roles: ["marketing", "executive"] },
       { href: "/marketing/receipts/new", label: "Upload Receipt", icon: Upload, roles: ["marketing"] },
       { href: "/marketing/calendar",  label: "Calendar",  icon: CalendarIcon, roles: ["marketing", "executive"] },
