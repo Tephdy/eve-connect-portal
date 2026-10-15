@@ -68,9 +68,11 @@ const GROUPS: NavGroup[] = [
       { href: "/property/tenants",    label: "Tenants",    icon: Users, roles: ["property_rep", "executive"] },
       { href: "/property/leases",     label: "Leases",     icon: FileText, roles: ["property_rep", "executive"] },
       { href: "/maintenance",                label: "Job Orders", icon: Wrench,  roles: ["property_rep", "executive"] },
-      { href: "/property/reservations", label: "Reservations", icon: KeyRound, roles: ["property_rep", "executive"] },
+      // @@CONTRACT_ENGINE:dedupe-property-reservations
       { href: "/property/calendar",   label: "Calendar",   icon: CalendarIcon, roles: ["property_rep", "executive"] },
       { href: "/property/contracts",  label: "Contracts",  icon: FileSignature, roles: ["property_rep", "executive"] },
+      // // @@CONTRACT_ENGINE:property-rep-reservations-link
+      { href: "/marketing/reservations", label: "Reservations", icon: KeyRound, roles: ["property_rep"] },
       { href: "/property/templates",  label: "Templates",  icon: ScrollText, roles: ["property_rep", "executive"] },
       { href: "/property/receipts",     label: "Receipts",       icon: Upload, roles: ["property_rep", "executive"] },
       { href: "/property/receipts/new", label: "Upload Receipt", icon: Upload, roles: ["property_rep"] },

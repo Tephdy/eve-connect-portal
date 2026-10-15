@@ -1,0 +1,23 @@
+-- ---------------------------------------------------------------------------
+-- 20261015000005_grant_property_rep_unit_reserve.sql
+--
+-- Grants unit:reserve to property_rep so they can regenerate, edit, and
+-- delete reservations from the marketing reservations module.
+-- Idempotent.
+-- ---------------------------------------------------------------------------
+
+do $$
+declare
+  r_property_rep uuid;
+begin
+  select id into r_property_rep from core.role where key = 'property_rep';
+  if r_property_rep is null then
+    raise exception 'Role property_rep not found in core.role';
+  end if;
+
+  insert into core.role_permission (role_id, permission_id)
+  select r_property_rep, id from core.permission where key = 'unit:reserve'
+  on conflict do nothing;
+
+  raise notice 'Granted unit:reserve to property_rep (if not already present).';
+end $$;
