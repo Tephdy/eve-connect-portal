@@ -130,8 +130,16 @@ export async function buildReservationContext(
   const totalPayable =
     totalAdvance + totalDep + addOnsAmount + occupancySupportFee;
   const amountPaid = reservationFee;
-  const remainingBalance = totalPayable - amountPaid;
-  const moveInPayable = remainingAdvance + deposit1 + deposit2;
+  const remainingBalance = Math.max(0, totalPayable - amountPaid);
+  const moveInPayable = remainingBalance;
+
+  // // @@CONTRACT_ENGINE:promissory-context
+  // Option A allocation:
+  //   reservation fee applies first to the 1-month advance,
+  //   then the remainder to the 1st security deposit.
+  const appliedToAdvance = Math.min(reservationFee, totalAdvance);
+  const appliedToDeposit1 = Math.max(0, reservationFee - totalAdvance);
+  const remainingDeposit1 = Math.max(0, deposit1 - appliedToDeposit1);
 
   // @@CONTRACT_ENGINE:rep-signature-context
   // @@CONTRACT_ENGINE:reservation-context-url-images
@@ -187,5 +195,10 @@ export async function buildReservationContext(
     days_to_move_in: String(daysToMoveIn),
     representative: "Authorized Representative",
     representative_signature,
+
+    // // @@CONTRACT_ENGINE:promissory-context
+    reservation_fee_applied_to_advance: fmt(appliedToAdvance),
+    reservation_fee_applied_to_deposit_1: fmt(appliedToDeposit1),
+    remaining_deposit_1: fmt(remainingDeposit1),
   };
 }

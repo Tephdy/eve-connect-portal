@@ -14,7 +14,11 @@ export type ReservationPlaceholderKey =
   | "days_to_move_in" | "representative"
   | "remaining_balance"
   // @@CONTRACT_ENGINE:rep-signature-types
-  | "representative_signature";
+  | "representative_signature"
+  // // @@CONTRACT_ENGINE:promissory-types
+  | "reservation_fee_applied_to_advance"
+  | "reservation_fee_applied_to_deposit_1"
+  | "remaining_deposit_1";
 
 export type ReservationContext = {
   legal_name: string;
@@ -64,4 +68,8 @@ export type ReservationContext = {
   remaining_balance: string;
   // @@CONTRACT_ENGINE:rep-signature-types
   representative_signature: string;
+  // // @@CONTRACT_ENGINE:promissory-types
+  reservation_fee_applied_to_advance: string;
+  reservation_fee_applied_to_deposit_1: string;
+  remaining_deposit_1: string;
 };
