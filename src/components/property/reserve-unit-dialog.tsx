@@ -74,6 +74,12 @@ export function ReserveUnitDialog({
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [clientEmail, setClientEmail] = useState("");
+  const [gender, setGender] = useState("");
+  const [company, setCompany] = useState("");
+  const [position, setPosition] = useState("");
+  const [validIdFile, setValidIdFile] = useState<File | null>(null);
+  const [vehiclePlate, setVehiclePlate] = useState("");
+  const [occupants, setOccupants] = useState("1");
 
   // Reservation
   const [fee, setFee] = useState("");
@@ -98,6 +104,19 @@ export function ReserveUnitDialog({
   const [receiptFiles, setReceiptFiles] = useState<File[]>([]);
 
   const addOnsTotal = addOns.reduce((s, a) => s + (Number(a.amount) || 0), 0);
+  const advanceRental = Number(monthlyRent) || 0;
+  const securityDeposit = (Number(dep1) || 0) + (Number(dep2) || 0);
+  const occupancySupportFee = 298;
+  const totalPayable =
+    advanceRental + securityDeposit + addOnsTotal + occupancySupportFee;
+  const totalAmountPaid = Number(fee) || 0;
+  const remainingBalance = totalPayable - totalAmountPaid;
+  const php = new Intl.NumberFormat("en-PH", {
+    style: "currency",
+    currency: "PHP",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 
   function applyInquiry(id: string) {
     setInquiryId(id);
@@ -129,6 +148,12 @@ export function ReserveUnitDialog({
     fd.set("client_name", clientName);
     fd.set("client_phone", clientPhone);
     fd.set("client_email", clientEmail);
+    fd.set("gender", gender);
+    fd.set("company", company);
+    fd.set("position", position);
+    fd.set("vehicle_plate", vehiclePlate);
+    fd.set("declared_occupants", occupants);
+    if (validIdFile) fd.set("valid_id_file", validIdFile);
     fd.set("reservation_fee", fee);
     fd.set("payment_mode", mode);
     fd.set("reference_number", reference);
@@ -269,6 +294,55 @@ export function ReserveUnitDialog({
               placeholder="name@example.com"
             />
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Gender"
+              value={gender}
+              onChange={(e) => setGender(e.target.value)}
+            />
+            <Input
+              label="Company (if applicable)"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+            />
+            <Input
+              label="Position"
+              value={position}
+              onChange={(e) => setPosition(e.target.value)}
+            />
+            <Input
+              label="Vehicle Plate Number (if any)"
+              value={vehiclePlate}
+              onChange={(e) => setVehiclePlate(e.target.value)}
+            />
+            <Input
+              label="Declared Number of Occupants"
+              type="number"
+              min="1"
+              step="1"
+              value={occupants}
+              onChange={(e) => setOccupants(e.target.value)}
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="reservation-valid-id"
+              className="mb-1 block text-xs font-semibold text-ink-500"
+            >
+              Upload Valid ID
+            </label>
+            <input
+              id="reservation-valid-id"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              onChange={(e) => setValidIdFile(e.target.files?.[0] ?? null)}
+              className="block w-full rounded-lg border border-white/60 bg-white/70 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-brand-500 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:file:bg-brand-600 dark:border-white/[0.08] dark:bg-white/[0.04]"
+            />
+            <p className="mt-1 text-xs text-ink-400">
+              PDF, JPEG, PNG, or WebP; maximum 10 MB.
+              {validIdFile ? ` Selected: ${validIdFile.name}` : ""}
+            </p>
+          </div>
 
           <SectionTitle>Reservation</SectionTitle>
 
@@ -340,6 +414,37 @@ export function ReserveUnitDialog({
               onChange={(e) => setTerm(e.target.value)}
               options={TERMS}
             />
+          </div>
+
+          <div className="rounded-xl border border-ink-100 bg-ink-50/60 p-3 text-sm dark:border-white/[0.08] dark:bg-white/[0.03]">
+            <div className="flex justify-between gap-3 py-1">
+              <span className="text-ink-500">Advance rental</span>
+              <span className="font-medium tabular-nums">{php.format(advanceRental)}</span>
+            </div>
+            <div className="flex justify-between gap-3 py-1">
+              <span className="text-ink-500">Security deposit</span>
+              <span className="font-medium tabular-nums">{php.format(securityDeposit)}</span>
+            </div>
+            <div className="flex justify-between gap-3 py-1">
+              <span className="text-ink-500">Add-ons</span>
+              <span className="font-medium tabular-nums">{php.format(addOnsTotal)}</span>
+            </div>
+            <div className="flex justify-between gap-3 py-1">
+              <span className="text-ink-500">Occupancy support fee</span>
+              <span className="font-medium tabular-nums">{php.format(occupancySupportFee)}</span>
+            </div>
+            <div className="flex justify-between gap-3 border-t border-ink-200 pt-2 dark:border-white/[0.08]">
+              <span className="font-semibold">Total payable</span>
+              <span className="font-semibold tabular-nums">{php.format(totalPayable)}</span>
+            </div>
+            <div className="flex justify-between gap-3 py-1">
+              <span className="text-ink-500">Total amount paid (reservation fee)</span>
+              <span className="font-medium tabular-nums">{php.format(totalAmountPaid)}</span>
+            </div>
+            <div className="flex justify-between gap-3 border-t border-ink-200 pt-2 dark:border-white/[0.08]">
+              <span className="font-semibold">Remaining balance</span>
+              <span className="font-semibold tabular-nums">{php.format(remainingBalance)}</span>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

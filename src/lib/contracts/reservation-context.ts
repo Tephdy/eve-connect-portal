@@ -126,8 +126,11 @@ export async function buildReservationContext(
     ? daysBetween(new Date(), targetMoveIn)
     : noticeDays;
 
-  const totalPayable = reservationFee + deposit1 + deposit2 + addOnsAmount;
+  const occupancySupportFee = 298;
+  const totalPayable =
+    totalAdvance + totalDep + addOnsAmount + occupancySupportFee;
   const amountPaid = reservationFee;
+  const remainingBalance = totalPayable - amountPaid;
   const moveInPayable = remainingAdvance + deposit1 + deposit2;
 
   // @@CONTRACT_ENGINE:rep-signature-context
@@ -140,13 +143,13 @@ export async function buildReservationContext(
   return {
     legal_name: s(r.client_name),
     age: s(tenant?.age),
-    gender: s(tenant?.gender),
-    company_name: s(tenant?.company),
+    gender: s(r.gender) || s(tenant?.gender),
+    company_name: s(r.company) || s(tenant?.company),
     messenger_account: s((r as { client_messenger?: string }).client_messenger),
-    position: s(tenant?.work_position),
-    vehicle_plate: "",
-    valid_id: "",
-    declared_occupants: "1",
+    position: s(r.position) || s(tenant?.work_position),
+    vehicle_plate: s(r.vehicle_plate),
+    valid_id: r.valid_id_path ? "Uploaded" : "",
+    declared_occupants: String(r.declared_occupants ?? 1),
     contact_no: s(r.client_phone),
     target_move_in_date: fmtDate(r.move_in_date),
     email: s(r.client_email),
@@ -164,9 +167,10 @@ export async function buildReservationContext(
     others_amount: fmt(0),
     add_ons_amount: fmt(addOnsAmount),
     admin_fee: fmt(0),
-    occupancy_fee: fmt(0),
+    occupancy_fee: fmt(occupancySupportFee),
     total_payable: fmt(totalPayable),
     amount_paid: fmt(amountPaid),
+    remaining_balance: fmt(remainingBalance),
 
     total_advance: fmt(totalAdvance),
     remaining_advance: fmt(remainingAdvance),

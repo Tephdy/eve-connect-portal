@@ -1,14 +1,17 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { assertPermission } from "@/lib/auth/guard";
 import { getSession } from "@/lib/auth/get-session";
 import { upsertForecast, recalculateForecasts } from "@/lib/db/forecast";
 import { createReservation, releaseReservation } from "@/lib/db/unit-reservations";
+import type { UnitReservation } from "@/lib/db/unit-reservations";
 import { createInvoice } from "@/lib/db/invoices";
 import { createReceipt } from "@/lib/db/receipts";
 import { uploadToDrive, validateFiles } from "@/lib/receipts/drive-upload";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit/log";
 import { emit } from "@/lib/events/emit";
 import { forecastOverrideSchema } from "@/lib/schemas/listing";
@@ -71,6 +74,11 @@ export async function reserveUnitAction(
   const client_name = String(formData.get("client_name") ?? "").trim();
   const client_phone = String(formData.get("client_phone") ?? "").trim() || null;
   const client_email = String(formData.get("client_email") ?? "").trim() || null;
+  const gender = String(formData.get("gender") ?? "").trim() || null;
+  const company = String(formData.get("company") ?? "").trim() || null;
+  const position = String(formData.get("position") ?? "").trim() || null;
+  const vehicle_plate = String(formData.get("vehicle_plate") ?? "").trim() || null;
+  const declared_occupants_raw = String(formData.get("declared_occupants") ?? "1").trim();
   const reservation_fee_raw = String(formData.get("reservation_fee") ?? "").trim();
   const payment_mode_raw = String(formData.get("payment_mode") ?? "").trim();
   const reference_number = String(formData.get("reference_number") ?? "").trim() || null;
@@ -92,9 +100,17 @@ export async function reserveUnitAction(
   const lease_status_raw = String(formData.get("lease_status") ?? "draft").trim();
 
   const addOnLabels = formData.getAll("add_on_label").map((v) => String(v).trim());
-  const addOnAmounts = formData.getAll("add_on_amount").map((v) => Number(String(v).trim() || "0"));
+  const addOnAmountsRaw = formData.getAll("add_on_amount").map((v) => String(v).trim());
+  if (
+    addOnAmountsRaw.some(
+      (value) => value !== "" && (!Number.isFinite(Number(value)) || Number(value) < 0)
+    )
+  ) {
+    return { ok: false, error: "Add-on amounts must be non-negative numbers" };
+  }
+  const addOnAmounts = addOnAmountsRaw.map((value) => Number(value || "0"));
   const add_ons = addOnLabels
-    .map((label, i) => ({ label, amount: Number.isFinite(addOnAmounts[i]) ? addOnAmounts[i] : 0 }))
+    .map((label, i) => ({ label, amount: addOnAmounts[i] ?? 0 }))
     .filter((a) => a.label.length > 0);
   const add_ons_amount = add_ons.reduce((s, a) => s + a.amount, 0);
 
@@ -103,9 +119,22 @@ export async function reserveUnitAction(
   const deposit_2 = deposit_2_raw ? Number(deposit_2_raw) : null;
   const notice_period_days = notice_period_days_raw ? Number(notice_period_days_raw) : null;
   const lease_status = lease_status_raw === "active" ? "active" : "draft";
+  const invalidFinancialAmount = [monthly_rent, deposit_1, deposit_2].some(
+    (value) => value !== null && (!Number.isFinite(value) || value < 0)
+  );
+  if (invalidFinancialAmount) {
+    return {
+      ok: false,
+      error: "Monthly rent and security deposits must be non-negative numbers",
+    };
+  }
 
   if (!unit_id) return { ok: false, error: "Missing unit" };
   if (!client_name) return { ok: false, error: "Client name is required" };
+  const declared_occupants = Number(declared_occupants_raw);
+  if (!Number.isInteger(declared_occupants) || declared_occupants < 1) {
+    return { ok: false, error: "Declared number of occupants must be at least 1" };
+  }
 
   const reservation_fee = reservation_fee_raw ? Number(reservation_fee_raw) : null;
   if (reservation_fee !== null && (!Number.isFinite(reservation_fee) || reservation_fee < 0)) {
@@ -118,33 +147,91 @@ export async function reserveUnitAction(
       ? (payment_mode_raw as (typeof valid_modes)[number])
       : null;
 
+  const validIdEntry = formData.get("valid_id_file");
+  const validIdFile =
+    validIdEntry instanceof File && validIdEntry.size > 0 ? validIdEntry : null;
+  const validIdMimeExtensions: Record<string, string> = {
+    "application/pdf": "pdf",
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+  };
+  if (validIdFile) {
+    if (validIdFile.size > 10 * 1024 * 1024) {
+      return { ok: false, error: "Valid ID file must be 10 MB or smaller" };
+    }
+    if (!validIdMimeExtensions[validIdFile.type]) {
+      return {
+        ok: false,
+        error: "Valid ID must be a PDF, JPEG, PNG, or WebP file",
+      };
+    }
+  }
+
   try {
-    const res = await createReservation({
-      unit_id,
-      client_name,
-      client_phone,
-      client_email,
-      reservation_fee,
-      payment_mode,
-      reference_number,
-      reserved_by: session?.id ?? null,
-      inquiry_id,
-      intent,
-      term,
-      lease_start_date,
-      lease_end_date,
-      move_in_date,
-      rent_due_date,
-      monthly_rent,
-      deposit_1,
-      deposit_2,
-      deposit_1_due_date,
-      deposit_2_due_date,
-      add_ons,
-      add_ons_amount,
-      notice_period_days,
-      lease_status,
-    });
+    const reservationId = randomUUID();
+    let validIdPath: string | null = null;
+    const admin = createAdminClient();
+    if (validIdFile) {
+      validIdPath =
+        reservationId +
+        "/valid-id." +
+        validIdMimeExtensions[validIdFile.type];
+      const { error: uploadError } = await admin.storage
+        .from("reservation-ids")
+        .upload(validIdPath, Buffer.from(await validIdFile.arrayBuffer()), {
+          contentType: validIdFile.type,
+          upsert: false,
+        });
+      if (uploadError) throw new Error("Valid ID upload failed: " + uploadError.message);
+    }
+
+    let res: UnitReservation;
+    try {
+      res = await createReservation({
+        id: reservationId,
+        unit_id,
+        client_name,
+        client_phone,
+        client_email,
+        gender,
+        company,
+        position,
+        valid_id_path: validIdPath,
+        vehicle_plate,
+        declared_occupants,
+        reservation_fee,
+        payment_mode,
+        reference_number,
+        reserved_by: session?.id ?? null,
+        inquiry_id,
+        intent,
+        term,
+        lease_start_date,
+        lease_end_date,
+        move_in_date,
+        rent_due_date,
+        monthly_rent,
+        deposit_1,
+        deposit_2,
+        deposit_1_due_date,
+        deposit_2_due_date,
+        add_ons,
+        add_ons_amount,
+        notice_period_days,
+        lease_status,
+      });
+    } catch (error) {
+      if (validIdPath) {
+        const { error: cleanupError } = await admin.storage
+          .from("reservation-ids")
+          .remove([validIdPath]);
+        if (cleanupError) {
+          console.error("[reserveUnitAction] failed to remove orphaned ID upload:", cleanupError);
+        }
+      }
+      throw error;
+    }
 
     // Auto-create the reservation-fee invoice
     const feeAmount = Number(reservation_fee ?? 0);
@@ -259,7 +346,18 @@ export async function reserveUnitAction(
     revalidatePath("/marketing/forecast");
     return { ok: true, data: undefined };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "Failed to reserve" };
+    const message = err instanceof Error ? err.message : "Failed to reserve";
+    const missingReservationColumn = message.match(
+      /(?:Could not find the '(\w+)' column of 'unit_reservation' in the schema cache|column unit_reservation\.(\w+) does not exist)/i
+    );
+    if (missingReservationColumn) {
+      return {
+        ok: false,
+        error:
+          "Reservation form fields are in place, but the database migration is not active yet. Apply supabase/migrations/20261015000000_reservation_client_details.sql in Supabase SQL Editor, then retry.",
+      };
+    }
+    return { ok: false, error: message };
   }
 }
 

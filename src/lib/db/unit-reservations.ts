@@ -8,6 +8,12 @@ export type UnitReservation = {
   client_name: string;
   client_phone: string | null;
   client_email: string | null;
+  gender: string | null;
+  company: string | null;
+  position: string | null;
+  valid_id_path: string | null;
+  vehicle_plate: string | null;
+  declared_occupants: number;
   reservation_fee: number | null;
   payment_mode: "cash" | "gcash" | "bank" | "check" | "other" | null;
   reference_number: string | null;
@@ -40,7 +46,7 @@ export type UnitReservation = {
 };
 
 const SELECT =
-  "id, unit_id, client_name, client_phone, client_email, reservation_fee, payment_mode, reference_number, reserved_at, reserved_by, released_at, released_by, release_reason, inquiry_id, verification_status, verified_at, verified_by, or_reference, verification_notes, intent, term, lease_start_date, lease_end_date, move_in_date, rent_due_date, monthly_rent, deposit_1, deposit_2, deposit_1_due_date, deposit_2_due_date, add_ons, add_ons_amount, notice_period_days, lease_status";
+  "id, unit_id, client_name, client_phone, client_email, gender, company, position, valid_id_path, vehicle_plate, declared_occupants, reservation_fee, payment_mode, reference_number, reserved_at, reserved_by, released_at, released_by, release_reason, inquiry_id, verification_status, verified_at, verified_by, or_reference, verification_notes, intent, term, lease_start_date, lease_end_date, move_in_date, rent_due_date, monthly_rent, deposit_1, deposit_2, deposit_1_due_date, deposit_2_due_date, add_ons, add_ons_amount, notice_period_days, lease_status";
 
 /**
  * The currently open reservation for a unit (released_at IS NULL), if any.
@@ -73,10 +79,17 @@ export async function listOpenReservations(): Promise<UnitReservation[]> {
 }
 
 export async function createReservation(input: {
+  id?: string;
   unit_id: string;
   client_name: string;
   client_phone?: string | null;
   client_email?: string | null;
+  gender?: string | null;
+  company?: string | null;
+  position?: string | null;
+  valid_id_path?: string | null;
+  vehicle_plate?: string | null;
+  declared_occupants?: number;
   reservation_fee?: number | null;
   payment_mode?: "cash" | "gcash" | "bank" | "check" | "other" | null;
   reference_number?: string | null;
@@ -116,10 +129,17 @@ export async function createReservation(input: {
     .schema("acct")
     .from("unit_reservation")
     .insert({
+      ...(input.id ? { id: input.id } : {}),
       unit_id: input.unit_id,
       client_name: input.client_name,
       client_phone: input.client_phone ?? null,
       client_email: input.client_email ?? null,
+      gender: input.gender ?? null,
+      company: input.company ?? null,
+      position: input.position ?? null,
+      valid_id_path: input.valid_id_path ?? null,
+      vehicle_plate: input.vehicle_plate ?? null,
+      declared_occupants: input.declared_occupants ?? 1,
       reservation_fee: input.reservation_fee ?? null,
       payment_mode: input.payment_mode ?? null,
       reference_number: input.reference_number ?? null,

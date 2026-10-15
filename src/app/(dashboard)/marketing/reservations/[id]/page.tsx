@@ -36,6 +36,18 @@ export default async function MarketingReservationDetailPage({
     .eq("reservation_id", id)
     .maybeSingle();
 
+  let validIdUrl: string | null = null;
+  if (reservation.valid_id_path) {
+    const { data: signedId, error: signedIdError } = await admin.storage
+      .from("reservation-ids")
+      .createSignedUrl(reservation.valid_id_path, 300);
+    if (signedIdError) {
+      console.error("[reservation-detail] valid ID link creation failed:", signedIdError);
+    } else {
+      validIdUrl = signedId.signedUrl;
+    }
+  }
+
   // Unit + property for display
   const { data: unit } = await admin
     .schema("core")
@@ -92,6 +104,28 @@ export default async function MarketingReservationDetailPage({
                 <Row label="Client" value={reservation.client_name} />
                 <Row label="Phone" value={reservation.client_phone ?? "-"} />
                 <Row label="Email" value={reservation.client_email ?? "-"} />
+                <Row label="Gender" value={reservation.gender ?? "-"} />
+                <Row label="Company" value={reservation.company ?? "-"} />
+                <Row label="Position" value={reservation.position ?? "-"} />
+                <Row
+                  label="Valid ID"
+                  value={
+                    validIdUrl ? (
+                      <a
+                        href={validIdUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-brand-600 hover:underline dark:text-brand-400"
+                      >
+                        View uploaded ID
+                      </a>
+                    ) : (
+                      "Not uploaded"
+                    )
+                  }
+                />
+                <Row label="Vehicle plate" value={reservation.vehicle_plate ?? "-"} />
+                <Row label="Declared occupants" value={String(reservation.declared_occupants)} />
                 <Row label="Reservation fee" value={formatPHP(reservation.reservation_fee ?? 0)} />
                 <Row label="Reserved at" value={new Date(reservation.reserved_at).toLocaleString()} />
                 <Row label="Target move-in" value={reservation.move_in_date ?? "-"} />

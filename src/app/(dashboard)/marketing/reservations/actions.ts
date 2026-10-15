@@ -58,7 +58,7 @@ export async function deleteReservationAction(
     const { data: res } = await admin
       .schema("acct")
       .from("unit_reservation")
-      .select("id, unit_id, client_name")
+      .select("id, unit_id, client_name, valid_id_path")
       .eq("id", reservationId)
       .maybeSingle();
 
@@ -96,6 +96,15 @@ export async function deleteReservationAction(
 
     if (delErr) {
       return { ok: false, error: delErr.message };
+    }
+
+    if (res.valid_id_path) {
+      const { error: storageError } = await admin.storage
+        .from("reservation-ids")
+        .remove([res.valid_id_path]);
+      if (storageError) {
+        console.error("[deleteReservationAction] valid ID cleanup failed:", storageError);
+      }
     }
 
     await logAudit({

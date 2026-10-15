@@ -494,6 +494,8 @@ export type Database = {
           client_email: string | null
           client_name: string
           client_phone: string | null
+          company: string | null
+          declared_occupants: number
           deposit_1: number | null
           deposit_1_due_date: string | null
           deposit_2: number | null
@@ -501,6 +503,7 @@ export type Database = {
           id: string
           inquiry_id: string | null
           intent: string | null
+          gender: string | null
           lease_end_date: string | null
           lease_start_date: string | null
           lease_status: string | null
@@ -510,6 +513,7 @@ export type Database = {
           or_reference: string | null
           payment_mode: string | null
           reference_number: string | null
+          position: string | null
           release_reason: string | null
           released_at: string | null
           released_by: string | null
@@ -519,6 +523,8 @@ export type Database = {
           reserved_by: string | null
           term: string | null
           unit_id: string
+          valid_id_path: string | null
+          vehicle_plate: string | null
           verification_notes: string | null
           verification_status: string
           verified_at: string | null
@@ -530,6 +536,8 @@ export type Database = {
           client_email?: string | null
           client_name: string
           client_phone?: string | null
+          company?: string | null
+          declared_occupants?: number
           deposit_1?: number | null
           deposit_1_due_date?: string | null
           deposit_2?: number | null
@@ -537,6 +545,7 @@ export type Database = {
           id?: string
           inquiry_id?: string | null
           intent?: string | null
+          gender?: string | null
           lease_end_date?: string | null
           lease_start_date?: string | null
           lease_status?: string | null
@@ -546,6 +555,7 @@ export type Database = {
           or_reference?: string | null
           payment_mode?: string | null
           reference_number?: string | null
+          position?: string | null
           release_reason?: string | null
           released_at?: string | null
           released_by?: string | null
@@ -555,6 +565,8 @@ export type Database = {
           reserved_by?: string | null
           term?: string | null
           unit_id: string
+          valid_id_path?: string | null
+          vehicle_plate?: string | null
           verification_notes?: string | null
           verification_status?: string
           verified_at?: string | null
@@ -566,6 +578,8 @@ export type Database = {
           client_email?: string | null
           client_name?: string
           client_phone?: string | null
+          company?: string | null
+          declared_occupants?: number
           deposit_1?: number | null
           deposit_1_due_date?: string | null
           deposit_2?: number | null
@@ -573,6 +587,7 @@ export type Database = {
           id?: string
           inquiry_id?: string | null
           intent?: string | null
+          gender?: string | null
           lease_end_date?: string | null
           lease_start_date?: string | null
           lease_status?: string | null
@@ -582,6 +597,7 @@ export type Database = {
           or_reference?: string | null
           payment_mode?: string | null
           reference_number?: string | null
+          position?: string | null
           release_reason?: string | null
           released_at?: string | null
           released_by?: string | null
@@ -591,6 +607,8 @@ export type Database = {
           reserved_by?: string | null
           term?: string | null
           unit_id?: string
+          valid_id_path?: string | null
+          vehicle_plate?: string | null
           verification_notes?: string | null
           verification_status?: string
           verified_at?: string | null

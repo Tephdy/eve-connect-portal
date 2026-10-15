@@ -35,15 +35,16 @@ begin
 <h2>2. RESERVATION DETAILS</h2>
 <table class="contract-table">
   <tbody>
-    <tr><td>Unit Number / Type:</td><td>{{unit_type}}</td><td>Advance Rental:</td><td>P{{advance_paid}}.00</td></tr>
-    <tr><td>Property:</td><td>{{property}}</td><td>Security Deposit:</td><td>P{{total_dep}}.00</td></tr>
-    <tr><td>Monthly Rental Rate:</td><td>P{{total_rental}}.00</td><td>Reservation Fee:</td><td>P{{reservation_fee}}.00</td></tr>
+    <tr><td>Unit Number / Type:</td><td>{{unit_type}}</td><td>Advance Rental:</td><td>P{{advance_paid}}</td></tr>
+    <tr><td>Property:</td><td>{{property}}</td><td>Security Deposit:</td><td>P{{total_dep}}</td></tr>
+    <tr><td>Monthly Rental Rate:</td><td>P{{total_rental}}</td><td>Reservation Fee:</td><td>P{{reservation_fee}}</td></tr>
     <tr><td>Add-ons:</td><td colspan="3">{{add_ons}}</td></tr>
-    <tr><td>AC:</td><td>P{{ac_amount}}.00</td><td>Bedframe:</td><td>P{{bf_amount}}.00</td></tr>
-    <tr><td>Foam:</td><td>P{{foam_amount}}.00</td><td>Others:</td><td>P{{others_amount}}.00</td></tr>
-    <tr><td>Add-ons Total Amount:</td><td>P{{add_ons_amount}}.00</td><td>Admin Fee:</td><td>P{{admin_fee}}.00</td></tr>
-    <tr><td>Occupancy Support Fee:</td><td>P{{occupancy_fee}}.00</td><td></td><td></td></tr>
-    <tr><td>Total Payable:</td><td>P{{total_payable}}.00</td><td>Total Amount Paid:</td><td>P{{amount_paid}}.00</td></tr>
+    <tr><td>AC:</td><td>P{{ac_amount}}</td><td>Bedframe:</td><td>P{{bf_amount}}</td></tr>
+    <tr><td>Foam:</td><td>P{{foam_amount}}</td><td>Others:</td><td>P{{others_amount}}</td></tr>
+    <tr><td>Add-ons Total Amount:</td><td colspan="3">P{{add_ons_amount}}</td></tr>
+    <tr><td>Occupancy Support Fee:</td><td colspan="3">P{{occupancy_fee}}</td></tr>
+    <tr><td>Total Payable:</td><td>P{{total_payable}}</td><td>Total Amount Paid:</td><td>P{{amount_paid}}</td></tr>
+    <tr><td>Remaining Balance:</td><td colspan="3">P{{remaining_balance}}</td></tr>
   </tbody>
 </table>
 
@@ -52,9 +53,9 @@ begin
 The Tenant, <strong>{{legal_name}}</strong>, hereby agrees to settle the following remaining dues on the specified dates:
 </p>
 <ul>
-  <li>One (1) Month Advance (P{{total_advance}}.00): Payable on {{one_month_advance_date}}</li>
-  <li>1st Security Deposit (P{{first_deposit}}.00): Payable on {{first_security_date}}</li>
-  <li>2nd Security Deposit (P{{second_deposit}}.00): Payable on {{second_security_date}}</li>
+  <li>One (1) Month Advance (P{{total_advance}}): Payable on {{one_month_advance_date}}</li>
+  <li>1st Security Deposit (P{{first_deposit}}): Payable on {{first_security_date}}</li>
+  <li>2nd Security Deposit (P{{second_deposit}}): Payable on {{second_security_date}}</li>
 </ul>
 
 <p>

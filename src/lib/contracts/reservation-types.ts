@@ -12,6 +12,7 @@ export type ReservationPlaceholderKey =
   | "one_month_advance_date" | "first_security_date" | "second_security_date"
   | "reservation_no_refund" | "first_sec_no_refund"
   | "days_to_move_in" | "representative"
+  | "remaining_balance"
   // @@CONTRACT_ENGINE:rep-signature-types
   | "representative_signature";
 
@@ -60,6 +61,7 @@ export type ReservationContext = {
 
   days_to_move_in: string;
   representative: string;
+  remaining_balance: string;
   // @@CONTRACT_ENGINE:rep-signature-types
   representative_signature: string;
 };
