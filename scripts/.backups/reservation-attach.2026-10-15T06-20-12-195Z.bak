@@ -1,0 +1,196 @@
+// @@CONTRACT_ENGINE:reservation-attach
+import "server-only";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { buildReservationContext } from "./reservation-context";
+import { renderContractContext } from "./render";
+import { code128Svg } from "./barcode";
+
+export function ensureRepresentativeSignatureMarkup(body: string): string {
+  if (!body) return body;
+
+  const isTemplate = /\{\{[\w.]+\}\}/.test(body);
+  const signatureImage =
+    /<img\b(?=[^>]*\bclass=["'][^"']*\brep-signature\b[^"']*["'])[^>]*>/gi;
+  const existingImage = body.match(signatureImage)?.[0];
+  const signaturePlaceholder = "{{representative_signature}}";
+  const sigMarkup =
+    isTemplate
+      ? signaturePlaceholder
+      : existingImage ??
+        '<img class="rep-signature" src="/jorgette%20sign.png" alt="Property Representative signature" />';
+
+  const withoutSignature = body
+    .replace(signatureImage, "")
+    .replace(/\{\{\s*representative_signature\s*\}\}/g, "");
+  const managementBlock =
+    /<p>\s*<strong>\s*(?:\{\{\s*representative\s*\}\}|Authorized Representative)\s*<\/strong>\s*<br\s*\/?>\s*For Management:\s*Authorized Representative\s*<\/p>/i;
+  const blockMatch = withoutSignature.match(managementBlock);
+  if (!blockMatch || blockMatch.index === undefined) return body;
+
+  const insertionPoint = blockMatch.index + blockMatch[0].length;
+  return (
+    withoutSignature.slice(0, insertionPoint) +
+    "\n" +
+    sigMarkup +
+    withoutSignature.slice(insertionPoint)
+  );
+}
+
+export function ensureTenantSignatureMarkup(
+  body: string,
+  tenantSignature: string | null | undefined
+): string {
+  if (!body || !tenantSignature) return body;
+
+  const escapedSignature = tenantSignature
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  const signatureImage =
+    '<img class="client-signature" src="' +
+    escapedSignature +
+    '" alt="Tenant signature" />';
+  const withoutOldSignature = body.replace(
+    /<p>\s*<img\b(?=[^>]*\bclass=["'][^"']*\bclient-signature\b[^"']*["'])[^>]*>\s*<\/p>\s*/gi,
+    ""
+  );
+  const declarationIndex = withoutOldSignature.search(
+    /<h[1-6]\b[^>]*>\s*12\.\s*DECLARATION\s*<\/h[1-6]>/i
+  );
+  if (declarationIndex < 0) return body;
+
+  const declaration = withoutOldSignature.slice(declarationIndex);
+  const clientNameBlock =
+    /<p>\s*<strong>[^<]*<\/strong>\s*<br\s*\/?>\s*NAME\s*\/\s*SIGNATURE\s*<\/p>/i;
+  const blockMatch = declaration.match(clientNameBlock);
+  if (!blockMatch || blockMatch.index === undefined) return body;
+
+  const insertionPoint = declarationIndex + blockMatch.index;
+  return (
+    withoutOldSignature.slice(0, insertionPoint) +
+    signatureImage +
+    "\n" +
+    withoutOldSignature.slice(insertionPoint)
+  );
+}
+
+/**
+ * Render + upsert the reservation contract for a given reservation id.
+ * Non-fatal: returns null and logs on failure.
+ */
+export async function renderReservationContract(
+  reservationId: string
+): Promise<{ contract_id: string; template_id: string; body_length: number } | null> {
+  const admin = createAdminClient();
+
+  try {
+    const { data: template } = await admin
+      .schema("prep")
+      .from("contract_template")
+      .select("id, body_markdown")
+      .eq("doc_type", "reservation")
+      .eq("active", true)
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!template) {
+      console.warn("[renderReservationContract] No active reservation template");
+      return null;
+    }
+
+    const ctx = await buildReservationContext(reservationId);
+    const normalizedTemplate = ensureRepresentativeSignatureMarkup(
+      template.body_markdown
+    );
+    // Reuse the strict renderer via a cast (ReservationContext is a superset)
+    let rendered = renderContractContext(
+      normalizedTemplate,
+      ctx as unknown as Parameters<typeof renderContractContext>[1],
+      { escape: false }
+    );
+
+    // // @@CONTRACT_ENGINE:client-signature-injection
+    // Inject the client signature into the body, above the NAME / SIGNATURE
+    // block for the client. Only if the reservation has already been signed.
+    {
+      const { data: sigRow } = await admin
+        .schema("prep")
+        .from("reservation_contract")
+        .select("tenant_signature")
+        .eq("reservation_id", reservationId)
+        .maybeSingle();
+
+      rendered = ensureTenantSignatureMarkup(
+        rendered,
+        sigRow?.tenant_signature
+      );
+    }
+
+    // Inject barcode if the template references {{barcode}}
+    try {
+      const barcodeSvg = code128Svg(`RSV-${reservationId.slice(0, 8).toUpperCase()}`, {
+        height: 40,
+        scale: 2,
+      });
+      rendered = rendered.replace(
+        /<p class="barcode-placeholder">[\s\S]*?<\/p>/,
+        `<div class="barcode-placeholder">${barcodeSvg}</div>`
+      );
+    } catch {
+      // barcode optional
+    }
+
+    // Upsert
+    const { data: existing } = await admin
+      .schema("prep")
+      .from("reservation_contract")
+      .select("id")
+      .eq("reservation_id", reservationId)
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      const { error: upErr } = await admin
+        .schema("prep")
+        .from("reservation_contract")
+        .update({
+          template_id: template.id,
+          generated_body: rendered,
+        })
+        .eq("id", existing.id);
+      if (upErr) throw new Error("update failed: " + upErr.message);
+      return {
+        contract_id: existing.id,
+        template_id: template.id,
+        body_length: rendered.length,
+      };
+    }
+
+    const { data: inserted, error: insErr } = await admin
+      .schema("prep")
+      .from("reservation_contract")
+      .insert({
+        reservation_id: reservationId,
+        template_id: template.id,
+        generated_body: rendered,
+        status: "draft",
+      })
+      .select("id")
+      .single();
+    if (insErr) throw new Error("insert failed: " + insErr.message);
+
+    return {
+      contract_id: inserted.id,
+      template_id: template.id,
+      body_length: rendered.length,
+    };
+  } catch (err) {
+    console.error(
+      "[renderReservationContract]",
+      err instanceof Error ? err.message : err
+    );
+    return null;
+  }
+}

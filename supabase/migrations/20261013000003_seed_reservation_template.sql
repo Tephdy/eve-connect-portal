@@ -171,6 +171,7 @@ Full sec. deposit (2 MONTHS) OF PHP {{total_dep}}.00 is non-consumable but refun
 
 <h2>12. DECLARATION</h2>
 <p>I hereby confirm that I have read and agreed to all terms and conditions stated above.</p>
+<br/><br/>
 <p><strong>{{legal_name}}</strong><br/>NAME / SIGNATURE</p>
 <p><strong>{{representative}}</strong><br/>For Management: Authorized Representative</p>
 $tpl$;

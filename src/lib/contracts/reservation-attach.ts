@@ -40,21 +40,40 @@ export function ensureTenantSignatureMarkup(
   body: string,
   tenantSignature: string | null | undefined
 ): string {
-  if (!body || !tenantSignature) return body;
+  // @@CONTRACT_ENGINE:blank-slot-when-unsigned
+  // Always inject a signature slot: image if signed, blank line if unsigned.
+  if (!body) return body;
 
-  const escapedSignature = tenantSignature
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-  const signatureImage =
-    '<img class="client-signature" src="' +
-    escapedSignature +
-    '" alt="Tenant signature" />';
-  const withoutOldSignature = body.replace(
-    /<p>\s*<img\b(?=[^>]*\bclass=["'][^"']*\bclient-signature\b[^"']*["'])[^>]*>\s*<\/p>\s*/gi,
-    ""
-  );
+  let signatureImage: string;
+  if (tenantSignature) {
+    const escapedSignature = tenantSignature
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    signatureImage =
+      '<img class="client-signature" src="' +
+      escapedSignature +
+      '" alt="Tenant signature" />';
+  } else {
+    // Blank ruled line for the tenant to sign on
+    // // @@CONTRACT_ENGINE:blank-slot-as-div
+    signatureImage = '<div class="client-signature-blank" aria-hidden="true"></div>';
+  }
+
+  const withoutOldSignature = body
+    .replace(
+      /<p>\s*<img\b(?=[^>]*\bclass=["'][^"']*\bclient-signature\b[^"']*["'])[^>]*>\s*<\/p>\s*/gi,
+      ""
+    )
+    .replace(
+      /<p>\s*<span\b(?=[^>]*\bclass=["'][^"']*\bclient-signature-blank\b[^"']*["'])[^>]*>\s*<\/span>\s*<\/p>\s*/gi,
+      ""
+    )
+    .replace(
+      /<div\b(?=[^>]*\bclass=["'][^"']*\bclient-signature-blank\b[^"']*["'])[^>]*>\s*<\/div>\s*/gi,
+      ""
+    );
   const declarationIndex = withoutOldSignature.search(
     /<h[1-6]\b[^>]*>\s*12\.\s*DECLARATION\s*<\/h[1-6]>/i
   );

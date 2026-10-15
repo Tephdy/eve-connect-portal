@@ -239,18 +239,25 @@ const printCss = `
   .contract-body li { page-break-inside: avoid; }
   .contract-body p { margin: 6px 0; page-break-inside: avoid; }
 
-  .rep-signature {
+  /* @@CONTRACT_ENGINE:bigger-signature-boxes */
+  .rep-signature,
+  .client-signature {
     display: block;
-    max-height: 55px;
+    max-height: 90px;
+    min-height: 60px;
     width: auto;
+    max-width: 280px;
     margin: 6px 0 2px 0;
     page-break-inside: avoid;
   }
-  .client-signature {
+
+  /* Reserved blank space when unsigned — 260x90 block */
+  .client-signature-blank {
     display: block;
-    max-height: 55px;
-    width: auto;
-    margin: 6px 0 2px 0;
+    width: 260px;
+    height: 90px;
+    border-bottom: 1px solid #333;
+    margin: 12px 0 8px 0;
     page-break-inside: avoid;
   }
 
