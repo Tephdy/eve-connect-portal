@@ -63,7 +63,7 @@ export default async function PropertyReservationsPage({
           }
         />
       ) : (
-        <ReservationTable rows={rows} readOnly />
+        <ReservationTable rows={rows} basePath="/property" readOnly />
       )}
     </div>
   );

@@ -8,9 +8,11 @@ import { signReservationContractAction } from "./sign-action";
 export function SignatureForm({
   contractId,
   reservationId,
+  completionPath,
 }: {
   contractId: string;
   reservationId: string;
+  completionPath: string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [drawing, setDrawing] = useState(false);
@@ -95,7 +97,7 @@ export function SignatureForm({
       return;
     }
     toast.push("Contract signed", "success");
-    router.push("/marketing/reservations/" + reservationId);
+    router.push(completionPath);
   }
 
   return (

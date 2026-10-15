@@ -11,11 +11,18 @@ export const dynamic = "force-dynamic";
 
 export default async function ReservationContractPrintPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ returnTo?: string }>;
 }) {
   await requirePagePermission("unit:read");
   const { id } = await params;
+  const sp = await searchParams;
+  const backPath =
+    sp.returnTo === "property"
+      ? `/property/reservations/${id}`
+      : `/marketing/reservations/${id}`;
 
   const admin = createAdminClient();
 
@@ -72,7 +79,7 @@ export default async function ReservationContractPrintPage({
       <style dangerouslySetInnerHTML={{ __html: printCss }} />
       <div className="print-root">
         <div className="screen-toolbar">
-          <a href={`/marketing/reservations/${id}`} className="back-link">
+          <a href={backPath} className="back-link">
             ← Back to reservation
           </a>
           <button type="button" className="print-btn">

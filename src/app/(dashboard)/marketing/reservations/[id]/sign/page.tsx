@@ -14,11 +14,18 @@ export const dynamic = "force-dynamic";
 
 export default async function StaffReservationSignPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ returnTo?: string }>;
 }) {
   await requirePagePermission("unit:read");
   const { id } = await params;
+  const sp = await searchParams;
+  const completionPath =
+    sp.returnTo === "property"
+      ? `/property/reservations/${id}`
+      : `/marketing/reservations/${id}`;
 
   const admin = createAdminClient();
   const { data: contract } = await admin
@@ -77,7 +84,11 @@ export default async function StaffReservationSignPage({
 
         {contract.status !== "signed" && (
           <div className="mt-5">
-            <SignatureForm contractId={contract.id} reservationId={id} />
+            <SignatureForm
+              contractId={contract.id}
+              reservationId={id}
+              completionPath={completionPath}
+            />
           </div>
         )}
       </div>
