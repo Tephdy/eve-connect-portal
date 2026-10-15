@@ -5,6 +5,76 @@ import { buildReservationContext } from "./reservation-context";
 import { renderContractContext } from "./render";
 import { code128Svg } from "./barcode";
 
+export function ensureRepresentativeSignatureMarkup(body: string): string {
+  if (!body) return body;
+
+  const isTemplate = /\{\{[\w.]+\}\}/.test(body);
+  const signatureImage =
+    /<img\b(?=[^>]*\bclass=["'][^"']*\brep-signature\b[^"']*["'])[^>]*>/gi;
+  const existingImage = body.match(signatureImage)?.[0];
+  const signaturePlaceholder = "{{representative_signature}}";
+  const sigMarkup =
+    isTemplate
+      ? signaturePlaceholder
+      : existingImage ??
+        '<img class="rep-signature" src="/jorgette%20sign.png" alt="Property Representative signature" />';
+
+  const withoutSignature = body
+    .replace(signatureImage, "")
+    .replace(/\{\{\s*representative_signature\s*\}\}/g, "");
+  const managementBlock =
+    /<p>\s*<strong>\s*(?:\{\{\s*representative\s*\}\}|Authorized Representative)\s*<\/strong>\s*<br\s*\/?>\s*For Management:\s*Authorized Representative\s*<\/p>/i;
+  const blockMatch = withoutSignature.match(managementBlock);
+  if (!blockMatch || blockMatch.index === undefined) return body;
+
+  const insertionPoint = blockMatch.index + blockMatch[0].length;
+  return (
+    withoutSignature.slice(0, insertionPoint) +
+    "\n" +
+    sigMarkup +
+    withoutSignature.slice(insertionPoint)
+  );
+}
+
+export function ensureTenantSignatureMarkup(
+  body: string,
+  tenantSignature: string | null | undefined
+): string {
+  if (!body || !tenantSignature) return body;
+
+  const escapedSignature = tenantSignature
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  const signatureImage =
+    '<img class="client-signature" src="' +
+    escapedSignature +
+    '" alt="Tenant signature" />';
+  const withoutOldSignature = body.replace(
+    /<p>\s*<img\b(?=[^>]*\bclass=["'][^"']*\bclient-signature\b[^"']*["'])[^>]*>\s*<\/p>\s*/gi,
+    ""
+  );
+  const declarationIndex = withoutOldSignature.search(
+    /<h[1-6]\b[^>]*>\s*12\.\s*DECLARATION\s*<\/h[1-6]>/i
+  );
+  if (declarationIndex < 0) return body;
+
+  const declaration = withoutOldSignature.slice(declarationIndex);
+  const clientNameBlock =
+    /<p>\s*<strong>[^<]*<\/strong>\s*<br\s*\/?>\s*NAME\s*\/\s*SIGNATURE\s*<\/p>/i;
+  const blockMatch = declaration.match(clientNameBlock);
+  if (!blockMatch || blockMatch.index === undefined) return body;
+
+  const insertionPoint = declarationIndex + blockMatch.index;
+  return (
+    withoutOldSignature.slice(0, insertionPoint) +
+    signatureImage +
+    "\n" +
+    withoutOldSignature.slice(insertionPoint)
+  );
+}
+
 /**
  * Render + upsert the reservation contract for a given reservation id.
  * Non-fatal: returns null and logs on failure.
@@ -31,9 +101,12 @@ export async function renderReservationContract(
     }
 
     const ctx = await buildReservationContext(reservationId);
+    const normalizedTemplate = ensureRepresentativeSignatureMarkup(
+      template.body_markdown
+    );
     // Reuse the strict renderer via a cast (ReservationContext is a superset)
     let rendered = renderContractContext(
-      template.body_markdown,
+      normalizedTemplate,
       ctx as unknown as Parameters<typeof renderContractContext>[1],
       { escape: false }
     );
@@ -49,24 +122,10 @@ export async function renderReservationContract(
         .eq("reservation_id", reservationId)
         .maybeSingle();
 
-      const sigUrl = sigRow?.tenant_signature;
-      if (sigUrl) {
-        const sigImg =
-          '<p><img class="client-signature" src="' +
-          sigUrl +
-          '" alt="Client signature" /></p>';
-
-        // The template ends with:
-        //   <p><strong>{{legal_name}}</strong><br/>NAME / SIGNATURE</p>
-        // Insert the signature image just above it.
-        // // @@CONTRACT_ENGINE:client-sig-regex-tolerant
-        // Whitespace/newline tolerant: the template may have the tags on
-        // separate lines, so \s* is inserted between each token.
-        rendered = rendered.replace(
-          /<p>\s*<strong>([^<]*)<\/strong>\s*<br\s*\/?>\s*NAME\s*\/\s*SIGNATURE\s*<\/p>/,
-          sigImg + '<p><strong>$1</strong><br/>NAME / SIGNATURE</p>'
-        );
-      }
+      rendered = ensureTenantSignatureMarkup(
+        rendered,
+        sigRow?.tenant_signature
+      );
     }
 
     // Inject barcode if the template references {{barcode}}

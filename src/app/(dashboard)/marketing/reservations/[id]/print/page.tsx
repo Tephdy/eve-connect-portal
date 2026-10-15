@@ -1,6 +1,10 @@
 // // @@CONTRACT_ENGINE:reservation-print-legal-layout
 import { notFound } from "next/navigation";
 import { requirePagePermission } from "@/lib/auth/guard";
+import {
+  ensureRepresentativeSignatureMarkup,
+  ensureTenantSignatureMarkup,
+} from "@/lib/contracts/reservation-attach";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +22,7 @@ export default async function ReservationContractPrintPage({
   const { data: contract } = await admin
     .schema("prep")
     .from("reservation_contract")
-    .select("id, generated_body, status, signed_at, reservation_id")
+    .select("id, generated_body, status, signed_at, reservation_id, tenant_signature")
     .eq("reservation_id", id)
     .maybeSingle();
 
@@ -56,8 +60,12 @@ export default async function ReservationContractPrintPage({
     }
   }
 
-  // Signatures are already inside generated_body — no append needed.
-  const bodyHtml = contract.generated_body ?? "";
+  // Some older contracts were rendered before the rep signature placeholder was
+  // added to the reservation template; repair them in memory before printing.
+  const bodyHtml = ensureTenantSignatureMarkup(
+    ensureRepresentativeSignatureMarkup(contract.generated_body ?? ""),
+    contract.tenant_signature
+  );
 
   return (
     <>
@@ -97,10 +105,10 @@ export default async function ReservationContractPrintPage({
 }
 
 const printCss = `
-  /* /* @@CONTRACT_ENGINE:print-pagination-fix */ */
+  /* @@CONTRACT_ENGINE:print-pagination-fix */
   @page {
-    size: Legal;
-    margin: 20mm 18mm 20mm 18mm;
+    size: 8.5in 14in;
+    margin: 0.6in 0.65in;
   }
 
   * { box-sizing: border-box; }
@@ -247,7 +255,33 @@ const printCss = `
       height: auto !important;
       min-height: 0 !important;
     }
-    .screen-toolbar { display: none !important; }
+    .app-shell-v2 {
+      display: block !important;
+      width: auto !important;
+      height: auto !important;
+      min-height: 0 !important;
+    }
+    .app-sidebar-v2,
+    .app-header-v2,
+    .app-shell-v2 > :not(.app-main-v2),
+    .screen-toolbar {
+      display: none !important;
+    }
+    .app-main-v2 {
+      display: block !important;
+      position: static !important;
+      width: auto !important;
+      height: auto !important;
+      min-height: 0 !important;
+      overflow: visible !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+    .app-main-v2 > div {
+      max-width: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
     .page {
       width: auto !important;
       max-width: 100% !important;

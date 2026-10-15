@@ -3,6 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, PenTool } from "lucide-react";
 import { requirePagePermission } from "@/lib/auth/guard";
+import {
+  ensureRepresentativeSignatureMarkup,
+  ensureTenantSignatureMarkup,
+} from "@/lib/contracts/reservation-attach";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SignatureForm } from "./signature-form";
 
@@ -20,7 +24,7 @@ export default async function StaffReservationSignPage({
   const { data: contract } = await admin
     .schema("prep")
     .from("reservation_contract")
-    .select("id, status, generated_body")
+    .select("id, status, generated_body, tenant_signature")
     .eq("reservation_id", id)
     .maybeSingle();
 
@@ -60,7 +64,13 @@ export default async function StaffReservationSignPage({
         <div className="mt-5 max-h-[520px] overflow-y-auto rounded-xl border border-ink-100 bg-white p-4 text-xs leading-relaxed text-ink-800 dark:border-white/[0.06] dark:bg-[#0b0c10] dark:text-ink-100">
           <div
             dangerouslySetInnerHTML={{
-              __html: contract.generated_body ?? "<p>Body unavailable.</p>",
+              __html:
+                ensureTenantSignatureMarkup(
+                  ensureRepresentativeSignatureMarkup(
+                    contract.generated_body ?? "<p>Body unavailable.</p>"
+                  ),
+                  contract.tenant_signature
+                ),
             }}
           />
         </div>
