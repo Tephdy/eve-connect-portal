@@ -127,10 +127,11 @@ const GROUPS: NavGroup[] = [
   },
   {
     label: "Maintenance",
-    roles: ["maintenance", "executive", "property_rep"],
+    // // @@CONTRACT_ENGINE:no-property-rep-in-maintenance
+    roles: ["maintenance", "executive"],
     items: [
-      { href: "/maintenance",            label: "Job Orders", icon: Wrench, roles: ["maintenance", "executive", "property_rep"], exact: true },
-      { href: "/maintenance/calendar",   label: "Calendar",   icon: CalendarIcon, roles: ["maintenance", "executive", "property_rep"] },
+      { href: "/maintenance",            label: "Job Orders", icon: Wrench, roles: ["maintenance", "executive"], exact: true },
+      { href: "/maintenance/calendar",   label: "Calendar",   icon: CalendarIcon, roles: ["maintenance", "executive"] },
       { href: "/maintenance/assets",     label: "Assets",     icon: Package, roles: ["maintenance", "executive"] },
       { href: "/maintenance/task-types", label: "Task Types", icon: Settings2, roles: ["executive"] },
     ],
