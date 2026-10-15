@@ -32,14 +32,15 @@ export const Input = forwardRef<HTMLInputElement, Props>(function Input(
           ref={ref}
           id={inputId}
           className={cn(
-            "h-10 w-full rounded-xl border bg-white/60 dark:bg-white/[0.04] backdrop-blur-sm px-3 text-sm text-ink-900 dark:text-ink-100",
+            "/* @@CONTRACT_ENGINE:off-white-input */",
+            "h-10 w-full rounded-xl border bg-[#FAFAF5] dark:bg-white/[0.05] px-3 text-sm text-ink-900 dark:text-ink-100",
             "placeholder:text-ink-400",
             "transition-all duration-150 outline-none",
-            "focus:border-brand-500 focus:bg-white/90 dark:focus:bg-white/[0.08] focus:ring-4 focus:ring-brand-500/15",
+            "focus:border-brand-500 focus:bg-white dark:focus:bg-white/[0.08] focus:ring-4 focus:ring-brand-500/15",
             "disabled:cursor-not-allowed disabled:bg-ink-50/60 disabled:text-ink-500",
             error
               ? "border-danger-500 focus:border-danger-500 focus:ring-danger-500/20"
-              : "border-white/60 dark:border-white/[0.08]",
+              : "border-ink-200/70 dark:border-white/[0.1]",
             leadingIcon && "pl-9",
             className
           )}

@@ -132,3 +132,135 @@ export async function deleteReservationAndRedirectAction(
   if (r.ok) redirect("/marketing/reservations");
   redirect("/marketing/reservations/" + reservationId + "?error=" + encodeURIComponent(r.error));
 }
+
+// @@CONTRACT_ENGINE:reservation-action-update
+export async function updateReservationAction(
+  reservationId: string,
+  formData: FormData
+): Promise<ActionResult> {
+  await assertPermission("unit:reserve");
+  const session = await getSession();
+
+  const admin = createAdminClient();
+
+  try {
+    const client_name = String(formData.get("client_name") ?? "").trim();
+    if (!client_name) {
+      return { ok: false, error: "Client name is required" };
+    }
+
+    const client_phone = String(formData.get("client_phone") ?? "").trim() || null;
+    const client_email = String(formData.get("client_email") ?? "").trim() || null;
+    const gender = String(formData.get("gender") ?? "").trim() || null;
+    const company = String(formData.get("company") ?? "").trim() || null;
+    const position = String(formData.get("position") ?? "").trim() || null;
+    const vehicle_plate = String(formData.get("vehicle_plate") ?? "").trim() || null;
+    const declared_occupants_raw = String(formData.get("declared_occupants") ?? "").trim();
+    const declared_occupants = declared_occupants_raw ? Number(declared_occupants_raw) : null;
+
+    const reservation_fee_raw = String(formData.get("reservation_fee") ?? "").trim();
+    const reservation_fee = reservation_fee_raw ? Number(reservation_fee_raw) : null;
+
+    const payment_mode_raw = String(formData.get("payment_mode") ?? "").trim();
+    const valid_modes = ["cash", "gcash", "bank", "check", "other"] as const;
+    const payment_mode =
+      payment_mode_raw && (valid_modes as readonly string[]).includes(payment_mode_raw)
+        ? (payment_mode_raw as (typeof valid_modes)[number])
+        : null;
+
+    const reference_number = String(formData.get("reference_number") ?? "").trim() || null;
+
+    const intent = String(formData.get("intent") ?? "").trim() || null;
+    const term = String(formData.get("term") ?? "").trim() || null;
+    const lease_start_date = String(formData.get("lease_start_date") ?? "").trim() || null;
+    const lease_end_date = String(formData.get("lease_end_date") ?? "").trim() || null;
+    const move_in_date = String(formData.get("move_in_date") ?? "").trim() || null;
+    const rent_due_date = String(formData.get("rent_due_date") ?? "").trim() || null;
+
+    const monthly_rent_raw = String(formData.get("monthly_rent") ?? "").trim();
+    const monthly_rent = monthly_rent_raw ? Number(monthly_rent_raw) : null;
+
+    const deposit_1_raw = String(formData.get("deposit_1") ?? "").trim();
+    const deposit_1 = deposit_1_raw ? Number(deposit_1_raw) : null;
+
+    const deposit_2_raw = String(formData.get("deposit_2") ?? "").trim();
+    const deposit_2 = deposit_2_raw ? Number(deposit_2_raw) : null;
+
+    const deposit_1_due_date = String(formData.get("deposit_1_due_date") ?? "").trim() || null;
+    const deposit_2_due_date = String(formData.get("deposit_2_due_date") ?? "").trim() || null;
+
+    const notice_period_days_raw = String(formData.get("notice_period_days") ?? "").trim();
+    const notice_period_days = notice_period_days_raw ? Number(notice_period_days_raw) : null;
+
+    const lease_status_raw = String(formData.get("lease_status") ?? "draft").trim();
+    const lease_status = lease_status_raw === "active" ? "active" : "draft";
+
+    const addOnLabels = formData.getAll("add_on_label").map((v) => String(v).trim());
+    const addOnAmounts = formData.getAll("add_on_amount").map((v) => Number(String(v).trim() || "0"));
+    const add_ons = addOnLabels
+      .map((label, i) => ({ label, amount: Number.isFinite(addOnAmounts[i]) ? addOnAmounts[i] : 0 }))
+      .filter((a) => a.label.length > 0);
+    const add_ons_amount = add_ons.reduce((s, a) => s + a.amount, 0);
+
+    const { updateReservation } = await import("@/lib/db/unit-reservations");
+    const updated = await updateReservation(reservationId, {
+      client_name,
+      client_phone,
+      client_email,
+      gender,
+      company,
+      position,
+      vehicle_plate,
+      declared_occupants,
+      reservation_fee,
+      payment_mode,
+      reference_number,
+      intent,
+      term,
+      lease_start_date,
+      lease_end_date,
+      move_in_date,
+      rent_due_date,
+      monthly_rent,
+      deposit_1,
+      deposit_2,
+      deposit_1_due_date,
+      deposit_2_due_date,
+      add_ons,
+      add_ons_amount,
+      notice_period_days,
+      lease_status,
+    });
+
+    // Auto-regenerate the contract body to reflect the new values
+    try {
+      const { renderReservationContract } = await import(
+        "@/lib/contracts/reservation-attach"
+      );
+      await renderReservationContract(reservationId);
+    } catch (regenErr) {
+      console.error(
+        "[updateReservationAction] contract regen failed:",
+        regenErr instanceof Error ? regenErr.message : regenErr
+      );
+    }
+
+    await logAudit({
+      actor_id: session?.id ?? null,
+      entity_type: "unit_reservation",
+      entity_id: reservationId,
+      action: "update",
+      after: updated,
+    });
+
+    revalidatePath("/marketing/reservations");
+    revalidatePath("/marketing/reservations/" + reservationId);
+    revalidatePath("/marketing/reservations/" + reservationId + "/edit");
+    return { ok: true, data: undefined };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Update failed",
+    };
+  }
+}

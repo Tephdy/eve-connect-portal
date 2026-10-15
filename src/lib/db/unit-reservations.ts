@@ -404,3 +404,57 @@ export async function markReservationLeased(input: {
     .eq("id", input.reservation_id);
   if (error) throw new Error(error.message);
 }
+
+// @@CONTRACT_ENGINE:reservation-dal-update
+export async function updateReservation(
+  id: string,
+  input: {
+    client_name?: string;
+    client_phone?: string | null;
+    client_email?: string | null;
+    gender?: string | null;
+    company?: string | null;
+    position?: string | null;
+    vehicle_plate?: string | null;
+    declared_occupants?: number | null;
+    reservation_fee?: number | null;
+    payment_mode?: "cash" | "gcash" | "bank" | "check" | "other" | null;
+    reference_number?: string | null;
+    intent?: string | null;
+    term?: string | null;
+    lease_start_date?: string | null;
+    lease_end_date?: string | null;
+    move_in_date?: string | null;
+    rent_due_date?: string | null;
+    monthly_rent?: number | null;
+    deposit_1?: number | null;
+    deposit_2?: number | null;
+    deposit_1_due_date?: string | null;
+    deposit_2_due_date?: string | null;
+    add_ons?: { label: string; amount: number }[] | null;
+    add_ons_amount?: number | null;
+    notice_period_days?: number | null;
+    lease_status?: "draft" | "active";
+  }
+): Promise<UnitReservation> {
+  const admin = createAdminClient();
+
+  const patch: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(input)) {
+    if (v !== undefined) patch[k] = v;
+  }
+  if (Object.keys(patch).length === 0) {
+    throw new Error("Nothing to update");
+  }
+
+  const { data, error } = await admin
+    .schema("acct")
+    .from("unit_reservation")
+    .update(patch)
+    .eq("id", id)
+    .select(SELECT)
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data as UnitReservation;
+}
